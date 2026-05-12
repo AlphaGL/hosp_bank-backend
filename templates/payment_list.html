@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+{% block title %}Billing — MediCore HMS{% endblock %}
+{% block page_title %}Billing{% endblock %}
+{% block nav_billing %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Payments & Billing</h1>
+        <p class="page-subtitle">Manage invoices, confirm payments, and generate receipts</p>
+    </div>
+</div>
+
+<!-- KPI Strip -->
+<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;" id="billing-kpis">
+    <div class="stat-card amber">
+        <div class="stat-icon" style="background:var(--amber-soft);color:var(--amber);">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+        </div>
+        <div class="stat-label">Total Payments</div>
+        <div class="stat-value" id="kpi-total">—</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-icon" style="background:var(--success-soft);color:var(--success);">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+        </div>
+        <div class="stat-label">Paid Today</div>
+        <div class="stat-value" id="kpi-paid">—</div>
+    </div>
+    <div class="stat-card danger">
+        <div class="stat-icon" style="background:var(--danger-soft);color:var(--danger);">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <div class="stat-label">Pending</div>
+        <div class="stat-value" id="kpi-pending">—</div>
+    </div>
+    <div class="stat-card teal">
+        <div class="stat-icon" style="background:var(--teal-soft);color:var(--teal);">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+        </div>
+        <div class="stat-label">Revenue Today</div>
+        <div class="stat-value" id="kpi-revenue">—</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="margin-bottom:20px;">
+    <div style="padding:14px 20px;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+            <div style="position:relative;flex:1;min-width:220px;">
+                <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted);" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" id="search-input" placeholder="Search by patient name or receipt…" style="padding-left:36px;width:100%;background:var(--navy-light);border:1px solid var(--navy-border);border-radius:var(--radius);padding-top:9px;padding-bottom:9px;color:var(--text-primary);font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;" oninput="handleSearch(this.value)">
+            </div>
+            <select id="status-filter" onchange="applyFilters()" style="background:var(--navy-light);border:1px solid var(--navy-border);border-radius:var(--radius);padding:9px 12px;color:var(--text-primary);font-size:13.5px;outline:none;max-width:160px;">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="paid">Paid</option>
+                <option value="failed">Failed</option>
+                <option value="refunded">Refunded</option>
+            </select>
+            <input type="date" id="date-filter" onchange="applyFilters()" style="background:var(--navy-light);border:1px solid var(--navy-border);border-radius:var(--radius);padding:9px 12px;color:var(--text-primary);font-size:13.5px;outline:none;max-width:160px;">
+        </div>
+    </div>
+</div>
+
+<!-- Payments Table -->
+<div class="card" style="padding:0;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--navy-border);display:flex;align-items:center;justify-content:space-between;">
+        <h3 style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin:0;">
+            Payments <span id="payment-count" class="badge badge-info" style="margin-left:8px;"></span>
+        </h3>
+    </div>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Receipt #</th>
+                    <th>Patient</th>
+                    <th>Services</th>
+                    <th>Amount Due</th>
+                    <th>Amount Paid</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="payments-tbody">
+                <tr>
+                    <td colspan="9" style="text-align:center;padding:48px;">
+                        <div class="loading-spinner"></div> Loading payments…
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-top:1px solid var(--navy-border);">
+        <span id="page-info" style="color:var(--text-muted);font-size:13px;"></span>
+        <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" id="prev-btn" onclick="changePage(-1)" disabled>← Prev</button>
+            <button class="btn btn-ghost btn-sm" id="next-btn" onclick="changePage(1)" disabled>Next →</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Payment Modal -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(13,27,42,0.85);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+    <div style="background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:var(--radius-lg);width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        <div style="padding:20px 24px;border-bottom:1px solid var(--navy-border);display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;">Confirm Payment</h3>
+            <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:22px;line-height:1;">×</button>
+        </div>
+        <div style="padding:22px 24px;">
+            <div id="modal-patient-info" style="background:var(--navy-light);border-radius:var(--radius);padding:12px 16px;margin-bottom:20px;font-size:13.5px;">
+                <div id="modal-patient-name" style="font-weight:600;"></div>
+                <div id="modal-amount-due" style="color:var(--text-muted);font-size:12px;margin-top:4px;"></div>
+                <div id="modal-services" style="color:var(--text-muted);font-size:12px;margin-top:4px;"></div>
+            </div>
+            <div id="modal-error" style="display:none;background:var(--danger-soft);border:1px solid rgba(232,85,85,.3);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--danger);margin-bottom:16px;"></div>
+            <div class="form-group">
+                <label>Amount Paid (₦) <span style="color:var(--danger)">*</span></label>
+                <input type="number" id="modal-amount-paid" placeholder="0.00" min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Payment Method <span style="color:var(--danger)">*</span></label>
+                <select id="modal-method">
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="bank_transfer">Bank Transfer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Transaction Reference</label>
+                <input type="text" id="modal-txn-ref" placeholder="Bank/card reference (optional)">
+            </div>
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="modal-notes" rows="2" placeholder="Optional notes…"></textarea>
+            </div>
+        </div>
+        <div style="padding:16px 24px;border-top:1px solid var(--navy-border);display:flex;gap:10px;justify-content:flex-end;">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modal-confirm-btn" onclick="submitConfirm()">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                Confirm Payment
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.loading-spinner {
+    display:inline-block;width:18px;height:18px;
+    border:2px solid var(--navy-border);border-top-color:var(--amber);
+    border-radius:50%;animation:spin .7s linear infinite;
+    margin-right:8px;vertical-align:middle;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+label { display:block;font-size:11.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);margin-bottom:7px; }
+input[type=text],input[type=number],select,textarea {
+    width:100%;background:var(--navy-light);border:1px solid var(--navy-border);
+    border-radius:var(--radius);padding:10px 13px;color:var(--text-primary);
+    font-family:'DM Sans',sans-serif;font-size:13.5px;outline:none;
+    transition:border-color .18s ease;
+}
+input:focus,select:focus,textarea:focus { border-color:var(--amber); }
+input::placeholder,textarea::placeholder { color:var(--text-muted); }
+.form-group { margin-bottom:16px; }
+</style>
+
+<script>
+let currentPage = 1, currentSearch = '', currentStatus = '', currentDate = '', totalCount = 0;
+let activePaymentId = null;
+const TOKEN = () => localStorage.getItem('access_token') || '';
+
+// Set today as default date
+document.getElementById('date-filter').value = new Date().toISOString().slice(0,10);
+currentDate = document.getElementById('date-filter').value;
+
+async function loadPayments(page = 1) {
+    const tbody = document.getElementById('payments-tbody');
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:48px;"><div class="loading-spinner"></div> Loading…</td></tr>';
+    let url = `/api/billing/payments/?page=${page}`;
+    if (currentSearch) url += `&search=${encodeURIComponent(currentSearch)}`;
+    if (currentStatus) url += `&status=${currentStatus}`;
+    if (currentDate)   url += `&date=${currentDate}`;
+    try {
+        const res  = await fetch(url, { headers: { 'Authorization': 'Bearer ' + TOKEN() } });
+        const data = await res.json();
+        totalCount = data.count || 0;
+        document.getElementById('payment-count').textContent = totalCount;
+        renderTable(data.results || []);
+        updatePagination(page, data.count, data.next, data.previous);
+        updateKPIs(data.results || []);
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:48px;color:var(--danger)">Failed to load payments.</td></tr>';
+    }
+}
+
+function updateKPIs(results) {
+    // Use the full page to show quick counts (full stats need dashboard endpoint)
+    document.getElementById('kpi-total').textContent = totalCount;
+    const paid    = results.filter(p => p.status === 'paid').length;
+    const pending = results.filter(p => p.status === 'pending').length;
+    const revenue = results.filter(p => p.status === 'paid').reduce((s, p) => s + parseFloat(p.amount_paid || 0), 0);
+    document.getElementById('kpi-paid').textContent    = paid;
+    document.getElementById('kpi-pending').textContent = pending;
+    document.getElementById('kpi-revenue').textContent = '₦' + revenue.toLocaleString(undefined, {minimumFractionDigits:0});
+}
+
+const methodLabels = { cash: 'Cash', card: 'Card', bank_transfer: 'Transfer' };
+
+function renderTable(payments) {
+    const tbody = document.getElementById('payments-tbody');
+    if (!payments.length) {
+        tbody.innerHTML = `<tr><td colspan="9"><div style="text-align:center;padding:48px;color:var(--text-muted);">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" style="opacity:.3;margin-bottom:12px;display:block;margin-inline:auto;"><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+            No payments found</div></td></tr>`;
+        return;
+    }
+    tbody.innerHTML = payments.map(p => {
+        const services = (p.services_summary || []).map(s => s.service).join(', ') || '—';
+        const date     = p.paid_at ? new Date(p.paid_at).toLocaleDateString('en-GB') : new Date(p.created_at).toLocaleDateString('en-GB');
+        const balance  = parseFloat(p.amount_due) - parseFloat(p.amount_paid || 0);
+        return `
+        <tr>
+            <td><span style="font-family:'DM Mono',monospace;font-size:11.5px;color:var(--teal);">${p.receipt_number}</span></td>
+            <td>
+                <div style="font-weight:600;">${p.patient_name || '—'}</div>
+                <div style="font-size:11.5px;color:var(--text-muted);font-family:'DM Mono',monospace;">${p.patient_id_code || ''}</div>
+            </td>
+            <td style="font-size:12px;color:var(--text-muted);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${services}">${services}</td>
+            <td style="font-family:'DM Mono',monospace;font-size:13px;">₦${Number(p.amount_due).toLocaleString()}</td>
+            <td style="font-family:'DM Mono',monospace;font-size:13px;color:${p.status==='paid'?'var(--success)':'var(--text-primary)'};">₦${Number(p.amount_paid||0).toLocaleString()}</td>
+            <td>${p.payment_method ? `<span class="badge badge-info">${methodLabels[p.payment_method]||p.payment_method}</span>` : '<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
+            <td><span class="badge badge-${p.status}">${p.status}</span></td>
+            <td style="font-size:12px;color:var(--text-muted);">${date}</td>
+            <td>
+                <div style="display:flex;gap:6px;">
+                    ${p.status !== 'paid' ? `<button class="btn btn-sm" style="background:var(--success-soft);color:var(--success);border:1px solid rgba(61,214,140,.3);" onclick="openConfirmModal(${p.id}, '${escHtml(p.patient_name)}', ${p.amount_due}, ${JSON.stringify(p.services_summary||[])})">Confirm</button>` : ''}
+                    ${p.status === 'paid' ? `<button class="btn btn-ghost btn-sm" onclick="viewReceipt(${p.id})">Receipt</button>` : ''}
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function escHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function updatePagination(page, count, next, prev) {
+    const start = (page-1)*20+1, end = Math.min(page*20, count||0);
+    document.getElementById('page-info').textContent = count ? `Showing ${start}–${end} of ${count}` : '';
+    document.getElementById('prev-btn').disabled = !prev;
+    document.getElementById('next-btn').disabled = !next;
+}
+
+function openConfirmModal(id, name, amountDue, services) {
+    activePaymentId = id;
+    document.getElementById('modal-patient-name').textContent = name;
+    document.getElementById('modal-amount-due').textContent   = `Amount Due: ₦${Number(amountDue).toLocaleString()}`;
+    document.getElementById('modal-services').textContent     = services.map(s => `${s.service} — ₦${Number(s.price).toLocaleString()}`).join(' · ');
+    document.getElementById('modal-amount-paid').value        = amountDue;
+    document.getElementById('modal-method').value             = 'cash';
+    document.getElementById('modal-txn-ref').value            = '';
+    document.getElementById('modal-notes').value              = '';
+    document.getElementById('modal-error').style.display      = 'none';
+    const modal = document.getElementById('confirm-modal');
+    modal.style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('confirm-modal').style.display = 'none';
+    activePaymentId = null;
+}
+
+async function submitConfirm() {
+    const errEl = document.getElementById('modal-error');
+    errEl.style.display = 'none';
+    const amountPaid = parseFloat(document.getElementById('modal-amount-paid').value);
+    if (!amountPaid || amountPaid <= 0) {
+        errEl.textContent = 'Please enter a valid amount.';
+        errEl.style.display = 'block';
+        return;
+    }
+    const btn = document.getElementById('modal-confirm-btn');
+    btn.disabled = true; btn.textContent = 'Processing…';
+    try {
+        const res = await fetch(`/api/billing/payments/${activePaymentId}/confirm/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + TOKEN() },
+            body: JSON.stringify({
+                amount_paid:     amountPaid,
+                payment_method:  document.getElementById('modal-method').value,
+                transaction_ref: document.getElementById('modal-txn-ref').value,
+                notes:           document.getElementById('modal-notes').value,
+            }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            closeModal();
+            loadPayments(currentPage);
+        } else {
+            errEl.textContent = data.error || JSON.stringify(data);
+            errEl.style.display = 'block';
+        }
+    } catch(e) {
+        errEl.textContent = 'Network error. Please try again.';
+        errEl.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg> Confirm Payment';
+    }
+}
+
+async function viewReceipt(id) {
+    try {
+        const res  = await fetch(`/api/billing/payments/${id}/receipt/`, { headers: { 'Authorization': 'Bearer ' + TOKEN() } });
+        const data = await res.json();
+        if (res.ok) {
+            const win = window.open('', '_blank');
+            win.document.write(buildReceiptHTML(data));
+            win.document.close();
+        }
+    } catch(e) {}
+}
+
+function buildReceiptHTML(p) {
+    const services = (p.services_summary||[]).map(s => `<tr><td>${s.service}</td><td style="text-align:right;">₦${Number(s.price).toLocaleString()}</td></tr>`).join('');
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt ${p.receipt_number}</title>
+    <style>body{font-family:sans-serif;max-width:420px;margin:40px auto;color:#111;}h1{font-size:22px;margin-bottom:4px;}
+    .sub{color:#666;font-size:13px;}table{width:100%;border-collapse:collapse;margin:20px 0;}
+    th,td{padding:8px 10px;border-bottom:1px solid #eee;font-size:13px;}th{text-align:left;background:#f5f5f5;}
+    .total{font-weight:700;font-size:15px;}.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;background:#e6faf2;color:#16a34a;}
+    .footer{margin-top:24px;text-align:center;font-size:11px;color:#999;}
+    </style></head><body>
+    <h1>MediCore HMS</h1><div class="sub">Payment Receipt</div>
+    <hr style="margin:16px 0;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+        <div><strong>${p.patient_name}</strong><br><span class="sub">${p.patient_id_code}</span></div>
+        <div style="text-align:right;"><span class="badge">PAID</span><br><span class="sub">${p.receipt_number}</span></div>
+    </div>
+    <table><thead><tr><th>Service</th><th style="text-align:right;">Price</th></tr></thead>
+    <tbody>${services}</tbody>
+    <tfoot><tr class="total"><td>Total Paid</td><td style="text-align:right;">₦${Number(p.amount_paid).toLocaleString()}</td></tr></tfoot></table>
+    <div><strong>Method:</strong> ${p.payment_method} &nbsp;|&nbsp; <strong>Date:</strong> ${new Date(p.paid_at).toLocaleString('en-GB')}</div>
+    <div class="footer">Thank you for choosing MediCore. This is an official receipt.</div>
+    <script>window.print();<\/script></body></html>`;
+}
+
+let searchTimer;
+function handleSearch(q) { currentSearch=q; clearTimeout(searchTimer); searchTimer=setTimeout(()=>{currentPage=1;loadPayments(currentPage);},350); }
+function applyFilters() {
+    currentStatus = document.getElementById('status-filter').value;
+    currentDate   = document.getElementById('date-filter').value;
+    currentPage = 1; loadPayments(currentPage);
+}
+function changePage(dir) { currentPage+=dir; loadPayments(currentPage); }
+
+// Close modal on backdrop click
+document.getElementById('confirm-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+loadPayments();
+</script>
+{% endblock %}

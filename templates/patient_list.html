@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Patients — MediCore HMS{% endblock %}
+{% block page_title %}Patient Records{% endblock %}
+{% block nav_patients %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Patient Records</h1>
+        <p class="page-subtitle">All registered patients in the system</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <a href="{% url 'patient-create' %}" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            Register Patient
+        </a>
+    </div>
+</div>
+
+<!-- Search & Filters -->
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-body" style="padding:16px 20px;">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+            <div style="position:relative;flex:1;min-width:220px;">
+                <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-muted);" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" id="search-input" placeholder="Search by name, ID, phone…" class="form-control" style="padding-left:36px;" oninput="searchPatients(this.value)">
+            </div>
+            <select class="form-control" id="gender-filter" onchange="applyFilter()" style="max-width:140px;">
+                <option value="">All Genders</option>
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+                <option value="O">Other</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">All Patients <span class="badge badge-info" id="patient-count" style="margin-left:8px;"></span></h3>
+    </div>
+    <div class="table-wrapper">
+        <table class="data-table" id="patients-table">
+            <thead>
+                <tr>
+                    <th>Patient ID</th>
+                    <th>Full Name</th>
+                    <th>Age / Gender</th>
+                    <th>Phone</th>
+                    <th>Total Visits</th>
+                    <th>Registered</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="patients-tbody">
+                <tr>
+                    <td colspan="7" style="text-align:center;padding:40px;">
+                        <div class="loading-spinner"></div>
+                        Loading patients…
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer" id="pagination-footer" style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-top:1px solid var(--navy-border);">
+        <span id="page-info" style="color:var(--text-muted);font-size:13px;"></span>
+        <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" id="prev-btn" onclick="changePage(-1)" disabled>← Prev</button>
+            <button class="btn btn-ghost btn-sm" id="next-btn" onclick="changePage(1)" disabled>Next →</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.loading-spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2px solid var(--navy-border);
+    border-top-color: var(--amber);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+let currentPage = 1;
+let currentSearch = '';
+let currentGender = '';
+let totalCount = 0;
+const PAGE_SIZE = 20;
+
+async function loadPatients(page = 1, search = '', gender = '') {
+    const tbody = document.getElementById('patients-tbody');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;"><div class="loading-spinner"></div> Loading…</td></tr>';
+
+    let url = `/api/patients/records/?page=${page}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (gender) url += `&gender=${gender}`;
+
+    try {
+        const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('access_token') || '') } });
+        const data = await res.json();
+        totalCount = data.count || 0;
+        renderTable(data.results || []);
+        updatePagination(page, data.count, data.next, data.previous);
+    } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--danger)">Failed to load patients.</td></tr>';
+    }
+}
+
+function renderTable(patients) {
+    const tbody = document.getElementById('patients-tbody');
+    document.getElementById('patient-count').textContent = totalCount;
+
+    if (!patients.length) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state" style="padding:40px;"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><p>No patients found</p></div></td></tr>';
+        return;
+    }
+
+    const genderLabel = { M: 'Male', F: 'Female', O: 'Other' };
+    tbody.innerHTML = patients.map(p => `
+        <tr>
+            <td><span class="badge badge-info" style="font-family:'DM Mono',monospace;font-size:11px;">${p.patient_id}</span></td>
+            <td><strong>${p.full_name}</strong></td>
+            <td>${p.age} / ${genderLabel[p.gender] || p.gender}</td>
+            <td>${p.phone}</td>
+            <td><span class="badge ${p.total_visits > 0 ? 'badge-success' : ''}">${p.total_visits} visit${p.total_visits !== 1 ? 's' : ''}</span></td>
+            <td style="color:var(--text-muted);font-size:12px;">${new Date(p.created_at).toLocaleDateString('en-GB')}</td>
+            <td>
+                <div style="display:flex;gap:6px;">
+                    <a href="/patients/records/${p.id}/" class="btn btn-ghost btn-sm">View</a>
+                    <a href="/patients/records/${p.id}/visits/new/" class="btn btn-sm" style="background:var(--amber-soft);color:var(--amber);border:1px solid rgba(245,166,35,0.3);">+ Visit</a>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updatePagination(page, count, next, prev) {
+    const pageSize = PAGE_SIZE;
+    const start = (page - 1) * pageSize + 1;
+    const end   = Math.min(page * pageSize, count);
+    document.getElementById('page-info').textContent = count ? `Showing ${start}–${end} of ${count}` : '';
+    document.getElementById('prev-btn').disabled = !prev;
+    document.getElementById('next-btn').disabled = !next;
+}
+
+let searchTimer;
+function searchPatients(q) {
+    currentSearch = q;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { currentPage = 1; loadPatients(currentPage, currentSearch, currentGender); }, 350);
+}
+function applyFilter() {
+    currentGender = document.getElementById('gender-filter').value;
+    currentPage = 1;
+    loadPatients(currentPage, currentSearch, currentGender);
+}
+function changePage(dir) {
+    currentPage += dir;
+    loadPatients(currentPage, currentSearch, currentGender);
+}
+
+loadPatients();
+</script>
+{% endblock %}

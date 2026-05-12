@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — MediCore HMS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --navy: #0d1b2a; --navy-mid: #162032; --navy-light: #1e2d40;
+            --navy-border: #253548; --amber: #f5a623; --amber-soft: rgba(245,166,35,0.12);
+            --danger: #e85555; --success: #3dd68c; --teal: #22c9b0;
+            --text-primary: #e8eef5; --text-secondary: #8fa3bb; --text-muted: #566d85;
+            --radius: 8px;
+        }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--navy);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            font-size: 14px;
+        }
+        @media(max-width:768px) { body { grid-template-columns: 1fr; } .login-hero { display: none; } }
+
+        /* ── HERO PANEL ── */
+        .login-hero {
+            background: linear-gradient(135deg, #0d1b2a 0%, #162032 60%, #0a2236 100%);
+            border-right: 1px solid var(--navy-border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 60px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-bg-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(245,166,35,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(245,166,35,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        .hero-glow {
+            position: absolute;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(34,201,176,0.08) 0%, transparent 70%);
+            bottom: -100px; right: -100px;
+            border-radius: 50%;
+        }
+        .hero-content { position: relative; z-index: 1; }
+        .hero-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 64px;
+        }
+        .hero-brand-icon {
+            width: 44px; height: 44px;
+            background: var(--amber);
+            border-radius: 10px;
+            display: grid; place-items: center;
+        }
+        .hero-brand-icon svg { width: 24px; height: 24px; fill: #0d1b2a; }
+        .hero-brand-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 22px; font-weight: 800;
+            color: var(--text-primary);
+        }
+        .hero-brand-name span { color: var(--amber); }
+        .hero-tagline {
+            font-family: 'Syne', sans-serif;
+            font-size: 36px; font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+        .hero-tagline em { color: var(--amber); font-style: normal; }
+        .hero-desc {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.7;
+            max-width: 380px;
+            margin-bottom: 48px;
+        }
+        .hero-stats {
+            display: flex;
+            gap: 32px;
+        }
+        .hero-stat-val {
+            font-family: 'Syne', sans-serif;
+            font-size: 26px; font-weight: 700;
+            color: var(--amber);
+        }
+        .hero-stat-lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+        /* ── LOGIN FORM PANEL ── */
+        .login-form-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 32px;
+        }
+        .login-box {
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-box-header {
+            margin-bottom: 36px;
+        }
+        .login-box-header h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 26px; font-weight: 700;
+            margin-bottom: 6px;
+        }
+        .login-box-header p { color: var(--text-secondary); }
+
+        .form-group { margin-bottom: 20px; }
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .form-control {
+            width: 100%;
+            background: var(--navy-light);
+            border: 1px solid var(--navy-border);
+            border-radius: var(--radius);
+            padding: 11px 14px;
+            color: var(--text-primary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.18s ease;
+        }
+        .form-control:focus { border-color: var(--amber); }
+        .form-control::placeholder { color: var(--text-muted); }
+
+        .btn-login {
+            width: 100%;
+            background: var(--amber);
+            color: #0d1b2a;
+            border: none;
+            border-radius: var(--radius);
+            padding: 13px;
+            font-family: 'Syne', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.18s ease, transform 0.12s ease;
+            margin-top: 8px;
+        }
+        .btn-login:hover { background: #e09510; transform: translateY(-1px); }
+        .btn-login:active { transform: translateY(0); }
+        .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            font-size: 13.5px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .alert-danger { background: rgba(232,85,85,0.12); border: 1px solid rgba(232,85,85,0.3); color: #e85555; }
+        .alert svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 28px;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ─── HERO ──────────────────────────────────────────────────────── -->
+<div class="login-hero">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-content">
+        <div class="hero-brand">
+            <div class="hero-brand-icon">
+                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
+            </div>
+            <div class="hero-brand-name">Medi<span>Core</span></div>
+        </div>
+        <h2 class="hero-tagline">Healthcare <em>managed</em><br>with precision.</h2>
+        <p class="hero-desc">A unified hospital management system for patient registration, billing, queues, and departmental coordination — built for modern clinical teams.</p>
+        <div class="hero-stats">
+            <div>
+                <div class="hero-stat-val">4</div>
+                <div class="hero-stat-lbl">Staff Roles</div>
+            </div>
+            <div>
+                <div class="hero-stat-val">Real-time</div>
+                <div class="hero-stat-lbl">Queue Tracking</div>
+            </div>
+            <div>
+                <div class="hero-stat-val">₦</div>
+                <div class="hero-stat-lbl">Billing & Receipts</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─── LOGIN FORM ────────────────────────────────────────────────── -->
+<div class="login-form-panel">
+    <div class="login-box">
+        <div class="login-box-header">
+            <h1>Welcome back</h1>
+            <p>Sign in to your MediCore account</p>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form id="login-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="username">Username</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="Enter your username" autocomplete="username" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" autocomplete="current-password" required>
+            </div>
+            <button type="submit" class="btn-login" id="login-btn">Sign In</button>
+        </form>
+
+        <div class="form-footer">
+            &copy; {% now "Y" %} MediCore Hospital Management System
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    try {
+        const res = await fetch('/api/auth/login/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            localStorage.setItem('access_token', data.access);
+            localStorage.setItem('refresh_token', data.refresh);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            window.location.href = '/';
+        } else {
+            showError(data.error || 'Login failed. Please try again.');
+        }
+    } catch (err) {
+        showError('Connection error. Please try again.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+    }
+});
+
+function showError(msg) {
+    let alert = document.querySelector('.alert-danger');
+    if (!alert) {
+        alert = document.createElement('div');
+        alert.className = 'alert alert-danger';
+        alert.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg><span></span>`;
+        document.getElementById('login-form').before(alert);
+    }
+    alert.querySelector('span').textContent = msg;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% block title %}Notifications — MediCore HMS{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block nav_notifications %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Notifications</h1>
+        <p class="page-subtitle">System alerts, payment confirmations, and queue updates</p>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" id="mark-all-btn" onclick="markAllRead()">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px;"><path d="M18 7l-1.41-1.41-6.34 6.34-2.83-2.83L6 10.5l4.24 4.24L18 7zm-14 5c0-4.41 3.59-8 8-8s8 3.59 8 8-3.59 8-8 8-8-3.59-8-8zm-2 0c0 5.52 4.48 10 10 10s10-4.48 10-10S17.52 2 12 2 2 6.48 2 12z"/></svg>
+            Mark All Read
+        </button>
+    </div>
+</div>
+
+<!-- Filter Tabs -->
+<div style="display:flex;gap:4px;margin-bottom:20px;background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:var(--radius);padding:4px;width:fit-content;">
+    <button class="tab-btn active" id="tab-all" onclick="setTab('all')">All</button>
+    <button class="tab-btn" id="tab-unread" onclick="setTab('unread')">Unread <span id="unread-badge" class="badge badge-danger" style="margin-left:4px;display:none;"></span></button>
+    <button class="tab-btn" id="tab-payment" onclick="setTab('payment_confirmed')">Payments</button>
+    <button class="tab-btn" id="tab-queue" onclick="setTab('patient_queued')">Queue</button>
+</div>
+
+<!-- Notifications List -->
+<div class="card" style="padding:0;">
+    <div id="notif-list-page" style="min-height:200px;">
+        <div style="text-align:center;padding:60px;color:var(--text-muted);">
+            <div class="loading-spinner"></div> Loading notifications…
+        </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-top:1px solid var(--navy-border);">
+        <span id="notif-page-info" style="color:var(--text-muted);font-size:13px;"></span>
+        <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" id="notif-prev-btn" onclick="changePage(-1)" disabled>← Prev</button>
+            <button class="btn btn-ghost btn-sm" id="notif-next-btn" onclick="changePage(1)" disabled>Next →</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.tab-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 6px;
+    transition: all .15s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.tab-btn:hover { color: var(--text-primary); background: var(--navy-light); }
+.tab-btn.active { background: var(--navy-light); color: var(--text-primary); }
+
+.notif-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--navy-border);
+    transition: background .15s;
+    cursor: pointer;
+}
+.notif-row:last-child { border-bottom: none; }
+.notif-row:hover { background: var(--navy-light); }
+.notif-row.unread { background: rgba(245,166,35,0.04); }
+.notif-row.unread:hover { background: rgba(245,166,35,0.08); }
+
+.notif-icon-wrap {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+.notif-icon-wrap svg { width: 18px; height: 18px; }
+
+.notif-unread-dot {
+    width: 8px; height: 8px;
+    background: var(--amber);
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+}
+
+.loading-spinner {
+    display:inline-block;width:18px;height:18px;
+    border:2px solid var(--navy-border);border-top-color:var(--amber);
+    border-radius:50%;animation:spin .7s linear infinite;
+    margin-right:8px;vertical-align:middle;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
+
+<script>
+let currentPage = 1, currentTab = 'all', totalCount = 0;
+const TOKEN = () => localStorage.getItem('access_token') || '';
+
+const iconConfig = {
+    payment_confirmed: { bg: 'var(--success-soft)', color: 'var(--success)', icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>' },
+    patient_queued:    { bg: 'var(--amber-soft)',   color: 'var(--amber)',   icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>' },
+    diagnosis_completed: { bg: 'var(--teal-soft)',  color: 'var(--teal)',   icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>' },
+};
+const defaultIcon = { bg: 'rgba(143,163,187,0.12)', color: 'var(--text-secondary)', icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>' };
+
+function setTab(tab) {
+    currentTab = tab;
+    currentPage = 1;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tab-${tab === 'payment_confirmed' ? 'payment' : tab === 'patient_queued' ? 'queue' : tab}`).classList.add('active');
+    loadNotifications();
+}
+
+async function loadNotifications(page = 1) {
+    const container = document.getElementById('notif-list-page');
+    container.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-muted);"><div class="loading-spinner"></div> Loading…</div>';
+
+    let url = `/api/notifications/?page=${page}`;
+    if (currentTab === 'unread')             url += '&unread=true';
+    else if (currentTab !== 'all')           url += `&event_type=${currentTab}`;
+
+    try {
+        const res  = await fetch(url, { headers: { 'Authorization': 'Bearer ' + TOKEN() } });
+        const data = await res.json();
+        totalCount = data.count || 0;
+        renderNotifications(data.results || []);
+        updatePagination(page, data.count, data.next, data.previous);
+        // update unread badge
+        const unreadCount = (data.results || []).filter(n => !n.is_read).length;
+        const badge = document.getElementById('unread-badge');
+        if (unreadCount > 0) { badge.textContent = unreadCount; badge.style.display = 'inline-flex'; }
+        else { badge.style.display = 'none'; }
+    } catch(e) {
+        container.innerHTML = '<div style="text-align:center;padding:60px;color:var(--danger);">Failed to load notifications.</div>';
+    }
+}
+
+function renderNotifications(notifications) {
+    const container = document.getElementById('notif-list-page');
+    if (!notifications.length) {
+        container.innerHTML = `<div style="text-align:center;padding:60px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" style="color:var(--text-muted);opacity:.4;margin-bottom:14px;display:block;margin-inline:auto;">
+                <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+            </svg>
+            <p style="color:var(--text-muted);font-size:14px;">No notifications found</p>
+        </div>`;
+        return;
+    }
+    container.innerHTML = notifications.map(n => {
+        const cfg  = iconConfig[n.event_type] || defaultIcon;
+        const time = formatTime(n.created_at);
+        return `
+        <div class="notif-row ${n.is_read ? '' : 'unread'}" onclick="markRead(${n.id}, this)" data-id="${n.id}">
+            <div class="notif-icon-wrap" style="background:${cfg.bg};color:${cfg.color};">${cfg.icon}</div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:13.5px;font-weight:${n.is_read ? 400 : 600};line-height:1.5;">${n.message}</div>
+                <div style="display:flex;gap:12px;margin-top:5px;align-items:center;flex-wrap:wrap;">
+                    ${n.patient_name ? `<span style="font-size:12px;color:var(--text-secondary);">👤 ${n.patient_name}</span>` : ''}
+                    <span style="font-size:12px;color:var(--text-muted);">${time}</span>
+                    <span class="badge badge-${n.event_type === 'payment_confirmed' ? 'success' : n.event_type === 'patient_queued' ? 'warn' : 'info'}" style="font-size:10px;">${(n.event_type||'').replace(/_/g,' ')}</span>
+                </div>
+            </div>
+            ${!n.is_read ? '<div class="notif-unread-dot"></div>' : ''}
+        </div>`;
+    }).join('');
+}
+
+function formatTime(ts) {
+    const d   = new Date(ts);
+    const now = new Date();
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60)   return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+    if (diff < 86400)return `${Math.floor(diff/3600)}h ago`;
+    return d.toLocaleDateString('en-GB', {day:'numeric',month:'short'});
+}
+
+async function markRead(id, rowEl) {
+    if (!rowEl.classList.contains('unread')) return;
+    try {
+        await fetch(`/api/notifications/${id}/mark-read/`, {
+            method: 'PATCH',
+            headers: { 'Authorization': 'Bearer ' + TOKEN() }
+        });
+        rowEl.classList.remove('unread');
+        const dot = rowEl.querySelector('.notif-unread-dot');
+        if (dot) dot.remove();
+        const nameEl = rowEl.querySelector('[style*="font-weight"]');
+        if (nameEl) nameEl.style.fontWeight = '400';
+    } catch(e) {}
+}
+
+async function markAllRead() {
+    const btn = document.getElementById('mark-all-btn');
+    btn.disabled = true;
+    try {
+        await fetch('/api/notifications/mark-all-read/', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + TOKEN() }
+        });
+        document.querySelectorAll('.notif-row.unread').forEach(el => {
+            el.classList.remove('unread');
+            const dot = el.querySelector('.notif-unread-dot');
+            if (dot) dot.remove();
+        });
+        document.getElementById('unread-badge').style.display = 'none';
+    } catch(e) {}
+    btn.disabled = false;
+}
+
+function updatePagination(page, count, next, prev) {
+    const start = (page-1)*20+1, end = Math.min(page*20, count||0);
+    document.getElementById('notif-page-info').textContent = count ? `Showing ${start}–${end} of ${count}` : '';
+    document.getElementById('notif-prev-btn').disabled = !prev;
+    document.getElementById('notif-next-btn').disabled = !next;
+}
+
+function changePage(dir) { currentPage += dir; loadNotifications(currentPage); }
+
+loadNotifications();
+</script>
+{% endblock %}

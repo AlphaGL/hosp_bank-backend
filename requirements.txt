@@ -1,0 +1,12 @@
+django>=4.2,<5.0
+djangorestframework>=3.15
+djangorestframework-simplejwt>=5.3
+django-cors-headers>=4.3
+Pillow>=10.0
+psycopg2-binary>=2.9       # PostgreSQL driver (required for Neon)
+dj-database-url>=2.1       # Parse DATABASE_URL into Django DATABASES config
+gunicorn>=21.0              # Production WSGI server
+
+# Cloudinary — file/media storage
+cloudinary>=1.36
+django-cloudinary-storage>=0.3.0

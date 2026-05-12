@@ -1,0 +1,1804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hospital Diagnostic System — API Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: #1e2330;
+    --border2: #252c3a;
+    --text: #e2e8f0;
+    --muted: #6b7a99;
+    --accent: #3b82f6;
+    --accent2: #60a5fa;
+    --green: #22c55e;
+    --green-dim: #16a34a22;
+    --yellow: #eab308;
+    --yellow-dim: #ca8a0422;
+    --red: #ef4444;
+    --red-dim: #dc262622;
+    --purple: #a78bfa;
+    --purple-dim: #7c3aed22;
+    --cyan: #22d3ee;
+    --orange: #f97316;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.7;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .sidebar-header {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo {
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-icon {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  .sidebar-subtitle {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .sidebar-section {
+    padding: 12px 12px 4px;
+  }
+
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+    padding: 0 8px;
+    margin-bottom: 4px;
+  }
+
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 6px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 12.5px;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+
+  .sidebar-link:hover, .sidebar-link.active {
+    background: var(--surface2);
+    color: var(--text);
+  }
+
+  .sidebar-link .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .main::-webkit-scrollbar { width: 6px; }
+  .main::-webkit-scrollbar-track { background: transparent; }
+  .main::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .base-url {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .base-url span { color: var(--cyan); }
+
+  .topbar-badges { display: flex; gap: 8px; }
+
+  .badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-jwt { background: var(--purple-dim); color: var(--purple); border: 1px solid var(--purple); }
+  .badge-rest { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+
+  /* ── CONTENT ── */
+  .content { padding: 36px; max-width: 960px; }
+
+  /* ── HERO ── */
+  .hero {
+    margin-bottom: 48px;
+    padding-bottom: 36px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent)18;
+    border: 1px solid var(--accent)44;
+    color: var(--accent2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 {
+    font-family: var(--sans);
+    font-size: 38px;
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  .hero h1 em {
+    color: var(--accent2);
+    font-style: normal;
+  }
+
+  .hero-desc {
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 600px;
+    line-height: 1.8;
+    margin-bottom: 24px;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .hero-stat {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .hero-stat-num {
+    font-family: var(--sans);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  .hero-stat-label {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── AUTH BOX ── */
+  .auth-box {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    margin-bottom: 40px;
+    overflow: hidden;
+  }
+
+  .auth-box-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .auth-flow {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+  }
+
+  .auth-step {
+    padding: 20px;
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+
+  .auth-step:last-child { border-right: none; }
+
+  .step-num {
+    width: 22px; height: 22px;
+    background: var(--accent);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .step-title {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .step-desc { color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 56px;
+    scroll-margin-top: 80px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+  }
+
+  .section-header h2 {
+    font-family: var(--sans);
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  .section-header .section-path {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    padding: 3px 10px;
+    border-radius: 4px;
+  }
+
+  /* ── ENDPOINT CARD ── */
+  .endpoint {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+
+  .endpoint:hover { border-color: var(--border2); }
+
+  .endpoint-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .endpoint-header:hover { background: #ffffff06; }
+
+  .method {
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    min-width: 52px;
+    text-align: center;
+  }
+
+  .GET    { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green)44; }
+  .POST   { background: var(--purple-dim); color: var(--purple); border: 1px solid var(--purple)44; }
+  .PATCH  { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow)44; }
+  .DELETE { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red)44; }
+  .PUT    { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow)44; }
+
+  .endpoint-path {
+    font-size: 13px;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .endpoint-path .param { color: var(--orange); }
+
+  .endpoint-summary {
+    font-size: 12px;
+    color: var(--muted);
+    margin-left: auto;
+    max-width: 280px;
+    text-align: right;
+  }
+
+  .endpoint-auth {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-weight: 700;
+  }
+
+  .auth-required { background: var(--red-dim); color: var(--red); border: 1px solid var(--red)33; }
+  .auth-public   { background: var(--green-dim); color: var(--green); border: 1px solid var(--green)33; }
+  .auth-role     { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow)33; }
+
+  .chevron {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+
+  .endpoint.open .chevron { transform: rotate(90deg); }
+
+  .endpoint-body {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding: 16px;
+    background: #0d0f14;
+  }
+
+  .endpoint.open .endpoint-body { display: block; }
+
+  /* ── BODY INNER ── */
+  .body-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .body-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .param-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+
+  .param-row:last-child { border-bottom: none; }
+
+  .param-name {
+    color: var(--cyan);
+    min-width: 140px;
+    font-weight: 500;
+  }
+
+  .param-type {
+    color: var(--orange);
+    min-width: 70px;
+    font-size: 11px;
+    padding-top: 1px;
+  }
+
+  .param-req {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    min-width: 44px;
+    text-align: center;
+  }
+
+  .req { background: var(--red-dim); color: var(--red); }
+  .opt { background: var(--surface); color: var(--muted); }
+  .ro  { background: var(--purple-dim); color: var(--purple); }
+
+  .param-desc { color: var(--muted); font-size: 12px; flex: 1; }
+
+  pre.code-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+    font-size: 12px;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.6;
+  }
+
+  .json-key    { color: var(--cyan); }
+  .json-str    { color: var(--green); }
+  .json-num    { color: var(--orange); }
+  .json-bool   { color: var(--purple); }
+  .json-null   { color: var(--muted); }
+  .json-brace  { color: var(--muted); }
+
+  .full-width { grid-column: 1 / -1; }
+
+  .body-note {
+    background: var(--accent)10;
+    border: 1px solid var(--accent)33;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--accent2);
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .body-note.warn {
+    background: var(--yellow)10;
+    border-color: var(--yellow)33;
+    color: var(--yellow);
+  }
+
+  .body-note.success {
+    background: var(--green)10;
+    border-color: var(--green)33;
+    color: var(--green);
+  }
+
+  /* ── ROLES TABLE ── */
+  .roles-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+    font-size: 12.5px;
+  }
+
+  .roles-table th {
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+  }
+
+  .roles-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .roles-table tr:last-child td { border-bottom: none; }
+
+  .roles-table tr:hover td { background: var(--surface); }
+
+  /* ── MISC ── */
+  .section-intro {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 20px;
+    max-width: 700px;
+    line-height: 1.8;
+  }
+
+  .filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .filter-tag {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .filter-tag.active, .filter-tag:hover {
+    background: var(--accent)18;
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 8px 14px;
+    margin-bottom: 20px;
+    width: 340px;
+  }
+
+  .search-bar input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    flex: 1;
+  }
+
+  .search-bar input::placeholder { color: var(--muted); }
+
+  .search-icon { color: var(--muted); font-size: 13px; }
+
+  /* ── RESPONSE CODES ── */
+  .response-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .response-row:last-child { border-bottom: none; }
+
+  .code-2xx { color: var(--green); font-weight: 700; }
+  .code-4xx { color: var(--yellow); font-weight: 700; }
+  .code-5xx { color: var(--red); font-weight: 700; }
+
+  .response-desc { color: var(--muted); }
+
+  /* scroll bar overall */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .hero-grid { grid-template-columns: 1fr 1fr; }
+    .auth-flow { grid-template-columns: 1fr; }
+    .body-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🏥</div>
+      HospitalDS API
+    </div>
+    <div class="sidebar-subtitle">API Reference v1.0</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Getting Started</div>
+    <a class="sidebar-link" onclick="scrollTo('overview')"><span class="dot" style="background:#3b82f6"></span>Overview</a>
+    <a class="sidebar-link" onclick="scrollTo('auth-section')"><span class="dot" style="background:#a78bfa"></span>Authentication</a>
+    <a class="sidebar-link" onclick="scrollTo('roles-section')"><span class="dot" style="background:#22d3ee"></span>Roles & Permissions</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Modules</div>
+    <a class="sidebar-link" onclick="scrollTo('patients-section')"><span class="dot" style="background:#22c55e"></span>Patients</a>
+    <a class="sidebar-link" onclick="scrollTo('visits-section')"><span class="dot" style="background:#22c55e"></span>Visits</a>
+    <a class="sidebar-link" onclick="scrollTo('staff-section')"><span class="dot" style="background:#22c55e"></span>Staff</a>
+    <a class="sidebar-link" onclick="scrollTo('services-section')"><span class="dot" style="background:#f97316"></span>Diagnostic Services</a>
+    <a class="sidebar-link" onclick="scrollTo('visit-services-section')"><span class="dot" style="background:#f97316"></span>Visit Services</a>
+    <a class="sidebar-link" onclick="scrollTo('billing-section')"><span class="dot" style="background:#eab308"></span>Billing / Payments</a>
+    <a class="sidebar-link" onclick="scrollTo('queues-section')"><span class="dot" style="background:#a78bfa"></span>Queues</a>
+    <a class="sidebar-link" onclick="scrollTo('notifications-section')"><span class="dot" style="background:#22d3ee"></span>Notifications</a>
+    <a class="sidebar-link" onclick="scrollTo('dashboard-section')"><span class="dot" style="background:#ef4444"></span>Dashboard</a>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Reference</div>
+    <a class="sidebar-link" onclick="scrollTo('workflow-section')"><span class="dot" style="background:#6b7a99"></span>Patient Workflow</a>
+    <a class="sidebar-link" onclick="scrollTo('errors-section')"><span class="dot" style="background:#6b7a99"></span>Error Reference</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="base-url">
+      Base URL: <span>https://your-domain.com/api/</span>
+    </div>
+    <div class="topbar-badges">
+      <span class="badge badge-jwt">JWT Auth</span>
+      <span class="badge badge-rest">REST / JSON</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- HERO -->
+    <div class="hero" id="overview">
+      <div class="hero-tag">📋 API Reference</div>
+      <h1>Hospital Diagnostic<br><em>System API</em></h1>
+      <p class="hero-desc">
+        Complete REST API for a multi-role hospital diagnostic workflow system.
+        Covers patient registration, visit management, service booking, payment processing,
+        queue management, and real-time notifications — all secured with JWT.
+      </p>
+      <div class="hero-grid">
+        <div class="hero-stat"><div class="hero-stat-num">6</div><div class="hero-stat-label">Modules</div></div>
+        <div class="hero-stat"><div class="hero-stat-num">40+</div><div class="hero-stat-label">Endpoints</div></div>
+        <div class="hero-stat"><div class="hero-stat-num">4</div><div class="hero-stat-label">User Roles</div></div>
+        <div class="hero-stat"><div class="hero-stat-num">JWT</div><div class="hero-stat-label">Auth Method</div></div>
+      </div>
+    </div>
+
+    <!-- AUTH -->
+    <div class="section" id="auth-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#a78bfa22;">🔐</div>
+        <h2>Authentication</h2>
+      </div>
+
+      <p class="section-intro">All endpoints require a Bearer JWT token in the Authorization header, except <code style="color:var(--cyan)">/api/auth/login/</code>. Tokens expire after <strong style="color:var(--text)">8 hours</strong>; refresh tokens last <strong style="color:var(--text)">7 days</strong>.</p>
+
+      <div class="auth-box">
+        <div class="auth-box-header">🔑 Auth Flow</div>
+        <div class="auth-flow">
+          <div class="auth-step">
+            <div class="step-num">1</div>
+            <div class="step-title">Login</div>
+            <div class="step-desc">POST to <code style="color:var(--cyan)">/api/auth/login/</code> with username + password. Receive <code style="color:var(--green)">access</code> and <code style="color:var(--green)">refresh</code> tokens.</div>
+          </div>
+          <div class="auth-step">
+            <div class="step-num">2</div>
+            <div class="step-title">Use Token</div>
+            <div class="step-desc">Add <code style="color:var(--orange)">Authorization: Bearer &lt;access&gt;</code> header to all requests.</div>
+          </div>
+          <div class="auth-step">
+            <div class="step-num">3</div>
+            <div class="step-title">Refresh</div>
+            <div class="step-desc">When access token expires, POST to <code style="color:var(--cyan)">/api/auth/refresh/</code> with the refresh token.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="endpoint open">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/auth/login/</span>
+          <span class="endpoint-auth auth-public">PUBLIC</span>
+          <span class="endpoint-summary">Authenticate and receive JWT tokens</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-grid">
+            <div>
+              <div class="body-section-title">Request Body</div>
+              <div class="param-row"><span class="param-name">username</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Staff username</span></div>
+              <div class="param-row"><span class="param-name">password</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Staff password</span></div>
+            </div>
+            <div>
+              <div class="body-section-title">Response 200</div>
+              <pre class="code-block"><span class="json-brace">{</span>
+  <span class="json-key">"access"</span>: <span class="json-str">"eyJhbGci..."</span>,
+  <span class="json-key">"refresh"</span>: <span class="json-str">"eyJhbGci..."</span>,
+  <span class="json-key">"user"</span>: <span class="json-brace">{</span>
+    <span class="json-key">"id"</span>: <span class="json-num">1</span>,
+    <span class="json-key">"username"</span>: <span class="json-str">"admin"</span>,
+    <span class="json-key">"role"</span>: <span class="json-str">"admin"</span>,
+    <span class="json-key">"department"</span>: <span class="json-str">"Management"</span>
+  <span class="json-brace">}</span>
+<span class="json-brace">}</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/auth/logout/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Blacklist refresh token (logout)</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-grid">
+            <div>
+              <div class="body-section-title">Request Body</div>
+              <div class="param-row"><span class="param-name">refresh</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">The refresh token to invalidate</span></div>
+            </div>
+            <div>
+              <div class="body-section-title">Response 200</div>
+              <pre class="code-block"><span class="json-brace">{</span> <span class="json-key">"message"</span>: <span class="json-str">"Logged out successfully."</span> <span class="json-brace">}</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/auth/refresh/</span>
+          <span class="endpoint-auth auth-public">PUBLIC</span>
+          <span class="endpoint-summary">Get a new access token</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-grid">
+            <div>
+              <div class="body-section-title">Request Body</div>
+              <div class="param-row"><span class="param-name">refresh</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Valid refresh token</span></div>
+            </div>
+            <div>
+              <div class="body-section-title">Response 200</div>
+              <pre class="code-block"><span class="json-brace">{</span> <span class="json-key">"access"</span>: <span class="json-str">"eyJhbGci..."</span> <span class="json-brace">}</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/auth/me/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Get logged-in user's profile</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-section-title">Response 200 — Staff Object</div>
+          <pre class="code-block"><span class="json-brace">{</span>
+  <span class="json-key">"id"</span>: <span class="json-num">1</span>, <span class="json-key">"username"</span>: <span class="json-str">"jane"</span>, <span class="json-key">"first_name"</span>: <span class="json-str">"Jane"</span>, <span class="json-key">"last_name"</span>: <span class="json-str">"Doe"</span>,
+  <span class="json-key">"full_name"</span>: <span class="json-str">"Jane Doe"</span>, <span class="json-key">"email"</span>: <span class="json-str">"jane@hospital.ng"</span>,
+  <span class="json-key">"role"</span>: <span class="json-str">"receptionist"</span>, <span class="json-key">"phone"</span>: <span class="json-str">"0801..."</span>,
+  <span class="json-key">"department"</span>: <span class="json-str">"Front Desk"</span>, <span class="json-key">"is_active"</span>: <span class="json-bool">true</span>, <span class="json-key">"date_joined"</span>: <span class="json-str">"2025-01-01T..."</span>
+<span class="json-brace">}</span></pre>
+          <div class="body-note">
+            💡 Also supports <strong>PATCH</strong> to update profile fields (first_name, last_name, phone, email, department).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROLES -->
+    <div class="section" id="roles-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#22d3ee22;">👥</div>
+        <h2>Roles & Permissions</h2>
+      </div>
+      <p class="section-intro">Every staff user has a <code style="color:var(--cyan)">role</code> field that controls access. Admins can access everything.</p>
+      <table class="roles-table">
+        <thead>
+          <tr>
+            <th>Role Value</th>
+            <th>Display Name</th>
+            <th>Key Permissions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code style="color:var(--cyan)">receptionist</code></td>
+            <td>Receptionist</td>
+            <td style="color:var(--muted)">Register patients, create visits, view queue & notifications</td>
+          </tr>
+          <tr>
+            <td><code style="color:var(--cyan)">finance</code></td>
+            <td>Finance Staff</td>
+            <td style="color:var(--muted)">Create & confirm payments, view billing records</td>
+          </tr>
+          <tr>
+            <td><code style="color:var(--cyan)">doctor</code></td>
+            <td>Doctor / Technician</td>
+            <td style="color:var(--muted)">View & manage queue (own dept), update service status, upload reports. Auto-filtered to their department.</td>
+          </tr>
+          <tr>
+            <td><code style="color:var(--cyan)">admin</code></td>
+            <td>Admin</td>
+            <td style="color:var(--muted)">Full access to all endpoints including staff management, service catalogue CRUD</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ══════════════ PATIENTS ══════════════ -->
+    <div class="section" id="patients-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#22c55e22;">🧑‍⚕️</div>
+        <h2>Patients</h2>
+        <span class="section-path">Base: /api/patients/records/</span>
+      </div>
+      <p class="section-intro">Manage patient records. All authenticated staff can view; any authenticated user can register a patient (auto-assigns <code style="color:var(--cyan)">registered_by</code>).</p>
+
+      <p class="section-intro"><strong style="color:var(--text)">Query Params:</strong> <code style="color:var(--cyan)">?search=</code> (patient_id, name, phone) &nbsp;|&nbsp; <code style="color:var(--cyan)">?ordering=created_at</code></p>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/patients/records/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">List all patients (paginated)</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-section-title">Response — Paginated List</div>
+          <pre class="code-block"><span class="json-brace">{</span>
+  <span class="json-key">"count"</span>: <span class="json-num">120</span>, <span class="json-key">"next"</span>: <span class="json-str">"...?page=2"</span>, <span class="json-key">"previous"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"results"</span>: <span class="json-brace">[</span><span class="json-brace">{</span>
+    <span class="json-key">"id"</span>: <span class="json-num">1</span>, <span class="json-key">"patient_id"</span>: <span class="json-str">"PAT-00001"</span>,
+    <span class="json-key">"first_name"</span>: <span class="json-str">"Emeka"</span>, <span class="json-key">"last_name"</span>: <span class="json-str">"Okafor"</span>,
+    <span class="json-key">"full_name"</span>: <span class="json-str">"Emeka Okafor"</span>, <span class="json-key">"age"</span>: <span class="json-num">34</span>,
+    <span class="json-key">"gender"</span>: <span class="json-str">"M"</span>, <span class="json-key">"phone"</span>: <span class="json-str">"0801234567"</span>,
+    <span class="json-key">"email"</span>: <span class="json-str">""</span>, <span class="json-key">"address"</span>: <span class="json-str">"12 Unity Road, Onitsha"</span>,
+    <span class="json-key">"registered_by_name"</span>: <span class="json-str">"Jane Doe"</span>,
+    <span class="json-key">"total_visits"</span>: <span class="json-num">3</span>,
+    <span class="json-key">"created_at"</span>: <span class="json-str">"2025-05-01T10:00:00Z"</span>
+  <span class="json-brace">}</span><span class="json-brace">]</span>
+<span class="json-brace">}</span></pre>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/patients/records/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Register a new patient</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-grid">
+            <div>
+              <div class="body-section-title">Request Body</div>
+              <div class="param-row"><span class="param-name">first_name</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Patient first name</span></div>
+              <div class="param-row"><span class="param-name">last_name</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Patient last name</span></div>
+              <div class="param-row"><span class="param-name">age</span><span class="param-type">integer</span><span class="param-req req">req</span><span class="param-desc">Patient age</span></div>
+              <div class="param-row"><span class="param-name">gender</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">"M", "F", or "O"</span></div>
+              <div class="param-row"><span class="param-name">phone</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Contact number</span></div>
+              <div class="param-row"><span class="param-name">email</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">Email address</span></div>
+              <div class="param-row"><span class="param-name">address</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">Physical address</span></div>
+            </div>
+            <div>
+              <div class="body-section-title">Notes</div>
+              <div class="body-note success">✅ <code>patient_id</code> (e.g. PAT-00042) and <code>registered_by</code> are auto-assigned — do NOT send them.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/patients/records/<span class="param">{id}</span>/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Retrieve single patient</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-section-title">Path Param</div>
+          <div class="param-row"><span class="param-name">id</span><span class="param-type">integer</span><span class="param-req req">req</span><span class="param-desc">Patient database ID (not patient_id code)</span></div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/patients/records/<span class="param">{id}</span>/visits/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">All visits for a patient</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-note">Returns a list of Visit objects for this patient.</div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/patients/records/search/?q=<span class="param">{query}</span></span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Search by ID, name, or phone</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-section-title">Query Params</div>
+          <div class="param-row"><span class="param-name">q</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Search term — matches patient_id, first_name, last_name, phone</span></div>
+          <div class="body-section-title" style="margin-top:12px">Response</div>
+          <pre class="code-block"><span class="json-brace">{</span> <span class="json-key">"results"</span>: <span class="json-brace">[</span> <span class="json-str">/* Patient objects */</span> <span class="json-brace">]</span> <span class="json-brace">}</span></pre>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method PATCH">PATCH</span>
+          <span class="endpoint-path">/api/patients/records/<span class="param">{id}</span>/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Update patient info (partial)</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-note">Send only the fields you want to update. All fields optional in PATCH.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ VISITS ══════════════ -->
+    <div class="section" id="visits-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#22c55e22;">📋</div>
+        <h2>Visits</h2>
+        <span class="section-path">Base: /api/patients/visits/</span>
+      </div>
+      <p class="section-intro">A Visit represents one hospital encounter for a patient. When created, status is auto-set to <code style="color:var(--yellow)">awaiting_payment</code>.</p>
+
+      <p class="section-intro"><strong style="color:var(--text)">Query Params:</strong> <code style="color:var(--cyan)">?status=</code> &nbsp;|&nbsp; <code style="color:var(--cyan)">?priority=normal|emergency</code> &nbsp;|&nbsp; <code style="color:var(--cyan)">?date=YYYY-MM-DD</code></p>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/patients/visits/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">List visits (filterable)</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-section-title">Visit Object Fields</div>
+          <div class="param-row"><span class="param-name">id</span><span class="param-type">integer</span><span class="param-req ro">read</span><span class="param-desc">Visit ID</span></div>
+          <div class="param-row"><span class="param-name">patient</span><span class="param-type">integer</span><span class="param-req ro">read</span><span class="param-desc">Patient FK</span></div>
+          <div class="param-row"><span class="param-name">patient_name</span><span class="param-type">string</span><span class="param-req ro">read</span><span class="param-desc">Full name</span></div>
+          <div class="param-row"><span class="param-name">patient_id_code</span><span class="param-type">string</span><span class="param-req ro">read</span><span class="param-desc">e.g. PAT-00001</span></div>
+          <div class="param-row"><span class="param-name">status</span><span class="param-type">string</span><span class="param-req ro">read</span><span class="param-desc">registered | awaiting_payment | paid | in_queue | in_progress | completed | cancelled</span></div>
+          <div class="param-row"><span class="param-name">priority</span><span class="param-type">string</span><span class="param-req ro">read</span><span class="param-desc">normal | emergency</span></div>
+          <div class="param-row"><span class="param-name">services</span><span class="param-type">array</span><span class="param-req ro">read</span><span class="param-desc">Nested VisitService objects</span></div>
+          <div class="param-row"><span class="param-name">payment_status</span><span class="param-type">string</span><span class="param-req ro">read</span><span class="param-desc">pending | paid | not_created</span></div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/patients/visits/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Create a visit for a patient</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-grid">
+            <div>
+              <div class="body-section-title">Request Body</div>
+              <div class="param-row"><span class="param-name">patient</span><span class="param-type">integer</span><span class="param-req req">req</span><span class="param-desc">Patient DB ID</span></div>
+              <div class="param-row"><span class="param-name">priority</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">"normal" (default) or "emergency"</span></div>
+              <div class="param-row"><span class="param-name">notes</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">Clinical notes</span></div>
+            </div>
+            <div>
+              <div class="body-section-title">Auto-set Fields</div>
+              <div class="body-note success">✅ <code>status</code> → <code>awaiting_payment</code><br>✅ <code>created_by</code> → current user<br>✅ <code>visit_date</code> → today</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method PATCH">PATCH</span>
+          <span class="endpoint-path">/api/patients/visits/<span class="param">{id}</span>/update-status/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Manually update visit status</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-grid">
+            <div>
+              <div class="body-section-title">Request Body</div>
+              <div class="param-row"><span class="param-name">status</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">One of the valid statuses below</span></div>
+              <div class="body-note warn" style="margin-top:10px">⚠️ Valid values: registered | awaiting_payment | paid | in_queue | in_progress | completed | cancelled</div>
+            </div>
+            <div>
+              <div class="body-section-title">Side Effects</div>
+              <div class="body-note">🔔 Setting status to <code>completed</code> auto-fires a <code>diagnosis_completed</code> notification to receptionists & admin.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ STAFF ══════════════ -->
+    <div class="section" id="staff-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#22c55e22;">🏷️</div>
+        <h2>Staff Management</h2>
+        <span class="section-path">Base: /api/patients/staff/</span>
+      </div>
+      <p class="section-intro">Full CRUD on staff users. <strong style="color:var(--red)">Admin-only.</strong> Use <code style="color:var(--cyan)">?search=</code> to filter by username, name, email, or role.</p>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/patients/staff/</span>
+          <span class="endpoint-auth auth-role">ADMIN</span>
+          <span class="endpoint-summary">List all staff</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-note">Returns list of Staff objects ordered by first_name. Supports <code>?search=</code> on username, first_name, last_name, email, role.</div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/patients/staff/</span>
+          <span class="endpoint-auth auth-role">ADMIN</span>
+          <span class="endpoint-summary">Create new staff account</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-section-title">Request Body</div>
+          <div class="param-row"><span class="param-name">username</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Unique login username</span></div>
+          <div class="param-row"><span class="param-name">first_name</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">First name</span></div>
+          <div class="param-row"><span class="param-name">last_name</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Last name</span></div>
+          <div class="param-row"><span class="param-name">email</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">Email address</span></div>
+          <div class="param-row"><span class="param-name">password</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Min 6 characters, write-only</span></div>
+          <div class="param-row"><span class="param-name">role</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">receptionist | finance | doctor | admin</span></div>
+          <div class="param-row"><span class="param-name">phone</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">Contact number</span></div>
+          <div class="param-row"><span class="param-name">department</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">e.g. "Radiology", "Front Desk"</span></div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method PATCH">PATCH</span>
+          <span class="endpoint-path">/api/patients/staff/<span class="param">{id}</span>/</span>
+          <span class="endpoint-auth auth-role">ADMIN</span>
+          <span class="endpoint-summary">Update staff record</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-note warn">⚠️ To deactivate a staff member, PATCH with <code>"is_active": false</code>. This prevents login without deleting the record.</div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method DELETE">DELETE</span>
+          <span class="endpoint-path">/api/patients/staff/<span class="param">{id}</span>/</span>
+          <span class="endpoint-auth auth-role">ADMIN</span>
+          <span class="endpoint-summary">Delete staff account</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-note warn">⚠️ Prefer deactivating (<code>is_active: false</code>) over deleting, to preserve audit trails.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ DIAGNOSTIC SERVICES ══════════════ -->
+    <div class="section" id="services-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#f9731622;">🔬</div>
+        <h2>Diagnostic Services</h2>
+        <span class="section-path">Base: /api/services/catalogue/</span>
+      </div>
+      <p class="section-intro">The master catalogue of available services (X-Ray, MRI, Blood tests, etc.). All authenticated users can view; only admins can create/edit/delete.</p>
+
+      <p class="section-intro"><strong style="color:var(--text)">Query Params:</strong> <code style="color:var(--cyan)">?search=</code> (name, code, category, department)</p>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/services/catalogue/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">List active services</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <pre class="code-block"><span class="json-brace">[{</span>
+  <span class="json-key">"id"</span>: <span class="json-num">1</span>, <span class="json-key">"name"</span>: <span class="json-str">"Chest X-Ray"</span>, <span class="json-key">"code"</span>: <span class="json-str">"IMG001"</span>,
+  <span class="json-key">"category"</span>: <span class="json-str">"imaging"</span>, <span class="json-key">"department"</span>: <span class="json-str">"Radiology"</span>,
+  <span class="json-key">"base_price"</span>: <span class="json-str">"5000.00"</span>, <span class="json-key">"duration_minutes"</span>: <span class="json-num">20</span>,
+  <span class="json-key">"description"</span>: <span class="json-str">"Standard chest radiograph"</span>,
+  <span class="json-key">"is_active"</span>: <span class="json-bool">true</span>
+<span class="json-brace">}]</span></pre>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/services/catalogue/by-department/?dept=<span class="param">{name}</span></span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Filter services by department</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="param-row"><span class="param-name">dept</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">Case-insensitive partial match on department name</span></div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/services/catalogue/</span>
+          <span class="endpoint-auth auth-role">ADMIN</span>
+          <span class="endpoint-summary">Add a new service to catalogue</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-section-title">Request Body</div>
+          <div class="param-row"><span class="param-name">name</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Unique service name</span></div>
+          <div class="param-row"><span class="param-name">code</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Unique short code e.g. IMG001</span></div>
+          <div class="param-row"><span class="param-name">category</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">imaging | lab | other</span></div>
+          <div class="param-row"><span class="param-name">department</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">Department that handles this service</span></div>
+          <div class="param-row"><span class="param-name">base_price</span><span class="param-type">decimal</span><span class="param-req req">req</span><span class="param-desc">Price in Naira</span></div>
+          <div class="param-row"><span class="param-name">duration_minutes</span><span class="param-type">integer</span><span class="param-req opt">opt</span><span class="param-desc">Expected duration (default: 30)</span></div>
+          <div class="param-row"><span class="param-name">description</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">Short description</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ VISIT SERVICES ══════════════ -->
+    <div class="section" id="visit-services-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#f9731622;">🧾</div>
+        <h2>Visit Services</h2>
+        <span class="section-path">Base: /api/services/visit-services/</span>
+      </div>
+      <p class="section-intro">Services booked for a specific visit. When created, <code style="color:var(--cyan)">price_at_booking</code> is snapshotted from the catalogue. Doctors only see their own department's services.</p>
+
+      <p class="section-intro"><strong style="color:var(--text)">Query Params:</strong> <code style="color:var(--cyan)">?visit=</code> &nbsp;|&nbsp; <code style="color:var(--cyan)">?department=</code> &nbsp;|&nbsp; <code style="color:var(--cyan)">?status=</code></p>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/services/visit-services/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Attach a service to a visit</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-grid">
+            <div>
+              <div class="body-section-title">Request Body</div>
+              <div class="param-row"><span class="param-name">visit</span><span class="param-type">integer</span><span class="param-req req">req</span><span class="param-desc">Visit ID</span></div>
+              <div class="param-row"><span class="param-name">service</span><span class="param-type">integer</span><span class="param-req req">req</span><span class="param-desc">DiagnosticService ID</span></div>
+              <div class="param-row"><span class="param-name">notes</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">Optional clinical note</span></div>
+            </div>
+            <div>
+              <div class="body-section-title">Auto-set</div>
+              <div class="body-note success">✅ <code>price_at_booking</code> is copied from service's <code>base_price</code> at creation time — price changes won't affect existing bookings.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method PATCH">PATCH</span>
+          <span class="endpoint-path">/api/services/visit-services/<span class="param">{id}</span>/update-status/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Update service status</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-grid">
+            <div>
+              <div class="body-section-title">Request Body</div>
+              <div class="param-row"><span class="param-name">status</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">pending | in_progress | completed | cancelled</span></div>
+            </div>
+            <div>
+              <div class="body-section-title">Side Effects</div>
+              <div class="body-note">🔁 <code>in_progress</code> auto-sets <code>started_at</code>.<br>✅ <code>completed</code> auto-sets <code>completed_at</code>.<br>🏁 If ALL services complete → Visit status → <code>completed</code>.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/services/visit-services/<span class="param">{id}</span>/upload-report/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Upload a report file (PDF/image)</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-grid">
+            <div>
+              <div class="body-section-title">Request (multipart/form-data)</div>
+              <div class="param-row"><span class="param-name">report</span><span class="param-type">file</span><span class="param-req req">req</span><span class="param-desc">PDF or image file. Use Content-Type: multipart/form-data</span></div>
+            </div>
+            <div>
+              <div class="body-section-title">Response 200</div>
+              <pre class="code-block"><span class="json-brace">{</span>
+  <span class="json-key">"message"</span>: <span class="json-str">"Report uploaded."</span>,
+  <span class="json-key">"report_url"</span>: <span class="json-str">"https://.../media/reports/..."</span>
+<span class="json-brace">}</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ BILLING ══════════════ -->
+    <div class="section" id="billing-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#eab30822;">💳</div>
+        <h2>Billing / Payments</h2>
+        <span class="section-path">Base: /api/billing/payments/</span>
+      </div>
+      <p class="section-intro">One Payment record per Visit. Finance staff create the record, then confirm it. Confirming a payment triggers queue placement and notifications.</p>
+
+      <p class="section-intro"><strong style="color:var(--text)">Query Params:</strong> <code style="color:var(--cyan)">?status=pending|paid|failed|refunded</code> &nbsp;|&nbsp; <code style="color:var(--cyan)">?date=YYYY-MM-DD</code> &nbsp;|&nbsp; <code style="color:var(--cyan)">?patient=PAT-00001</code></p>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/billing/payments/</span>
+          <span class="endpoint-auth auth-role">FINANCE</span>
+          <span class="endpoint-summary">Create payment record for a visit</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-grid">
+            <div>
+              <div class="body-section-title">Request Body</div>
+              <div class="param-row"><span class="param-name">visit</span><span class="param-type">integer</span><span class="param-req req">req</span><span class="param-desc">Visit ID (1:1 relation)</span></div>
+            </div>
+            <div>
+              <div class="body-section-title">Auto-set</div>
+              <div class="body-note success">✅ <code>amount_due</code> is auto-calculated from all visit services' <code>price_at_booking</code> values.<br>✅ <code>receipt_number</code> auto-generated (RCPxxxxxxxx).<br>✅ <code>status</code> → pending.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/billing/payments/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">List all payments</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-section-title">Payment Object Fields</div>
+          <div class="param-row"><span class="param-name">receipt_number</span><span class="param-type">string</span><span class="param-req ro">read</span><span class="param-desc">Unique receipt ID e.g. RCPA1B2C3D4</span></div>
+          <div class="param-row"><span class="param-name">patient_name</span><span class="param-type">string</span><span class="param-req ro">read</span><span class="param-desc">Full patient name</span></div>
+          <div class="param-row"><span class="param-name">amount_due</span><span class="param-type">decimal</span><span class="param-req ro">read</span><span class="param-desc">Total bill amount (₦)</span></div>
+          <div class="param-row"><span class="param-name">amount_paid</span><span class="param-type">decimal</span><span class="param-req ro">read</span><span class="param-desc">Amount actually paid</span></div>
+          <div class="param-row"><span class="param-name">balance</span><span class="param-type">decimal</span><span class="param-req ro">read</span><span class="param-desc">amount_due - amount_paid</span></div>
+          <div class="param-row"><span class="param-name">is_fully_paid</span><span class="param-type">boolean</span><span class="param-req ro">read</span><span class="param-desc">True when amount_paid ≥ amount_due</span></div>
+          <div class="param-row"><span class="param-name">status</span><span class="param-type">string</span><span class="param-req ro">read</span><span class="param-desc">pending | paid | failed | refunded</span></div>
+          <div class="param-row"><span class="param-name">services_summary</span><span class="param-type">array</span><span class="param-req ro">read</span><span class="param-desc">List of {service, price} objects</span></div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/billing/payments/<span class="param">{id}</span>/confirm/</span>
+          <span class="endpoint-auth auth-role">FINANCE</span>
+          <span class="endpoint-summary">Confirm payment received ⚡ Key endpoint</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-grid">
+            <div>
+              <div class="body-section-title">Request Body</div>
+              <div class="param-row"><span class="param-name">amount_paid</span><span class="param-type">decimal</span><span class="param-req req">req</span><span class="param-desc">Amount received from patient</span></div>
+              <div class="param-row"><span class="param-name">payment_method</span><span class="param-type">string</span><span class="param-req req">req</span><span class="param-desc">cash | card | bank_transfer</span></div>
+              <div class="param-row"><span class="param-name">transaction_ref</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">Bank/card ref number</span></div>
+              <div class="param-row"><span class="param-name">notes</span><span class="param-type">string</span><span class="param-req opt">opt</span><span class="param-desc">Any billing notes</span></div>
+            </div>
+            <div>
+              <div class="body-section-title">Chain Reaction (if fully paid)</div>
+              <div class="body-note">
+                🚀 When <code>amount_paid ≥ amount_due</code>:<br><br>
+                1. Payment status → <code>paid</code><br>
+                2. Visit status → <code>paid</code><br>
+                3. Queue entries created per department<br>
+                4. Visit status → <code>in_queue</code><br>
+                5. Notifications sent to receptionists & admin
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/billing/payments/<span class="param">{id}</span>/receipt/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Get receipt data (paid only)</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-note warn">⚠️ Returns 400 if payment is not yet in <code>paid</code> status. Includes a <code>receipt_generated_at</code> timestamp.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ QUEUES ══════════════ -->
+    <div class="section" id="queues-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#a78bfa22;">🏥</div>
+        <h2>Department Queues</h2>
+        <span class="section-path">Base: /api/queues/</span>
+      </div>
+      <p class="section-intro">Auto-managed queue entries per department per day. Created automatically when payment is confirmed. Emergency patients are bumped to position #1. Doctors auto-see only their department.</p>
+
+      <p class="section-intro"><strong style="color:var(--text)">Query Params:</strong> <code style="color:var(--cyan)">?department=</code> &nbsp;|&nbsp; <code style="color:var(--cyan)">?status=waiting|in_progress|completed|skipped</code> &nbsp;|&nbsp; <code style="color:var(--cyan)">?date=YYYY-MM-DD</code> (default: today) &nbsp;|&nbsp; <code style="color:var(--cyan)">?priority=emergency</code></p>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/queues/live/?department=<span class="param">{name}</span></span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Live queue — today's waiting patients</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-section-title">Response — ordered by: emergency first, then queue_number</div>
+          <pre class="code-block"><span class="json-brace">[{</span>
+  <span class="json-key">"id"</span>: <span class="json-num">5</span>, <span class="json-key">"queue_number"</span>: <span class="json-num">1</span>,
+  <span class="json-key">"patient_name"</span>: <span class="json-str">"Emeka Okafor"</span>,
+  <span class="json-key">"patient_id_code"</span>: <span class="json-str">"PAT-00001"</span>,
+  <span class="json-key">"priority"</span>: <span class="json-str">"emergency"</span>,
+  <span class="json-key">"department"</span>: <span class="json-str">"Radiology"</span>,
+  <span class="json-key">"status"</span>: <span class="json-str">"waiting"</span>,
+  <span class="json-key">"services"</span>: <span class="json-brace">[</span><span class="json-str">"Chest X-Ray"</span><span class="json-brace">]</span>
+<span class="json-brace">}]</span></pre>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method PATCH">PATCH</span>
+          <span class="endpoint-path">/api/queues/<span class="param">{id}</span>/call/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Call patient to room (in_progress)</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-note">No request body needed. Sets status → <code>in_progress</code>, records <code>called_at</code> and <code>attended_by</code> (current user).</div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method PATCH">PATCH</span>
+          <span class="endpoint-path">/api/queues/<span class="param">{id}</span>/complete/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Mark queue entry as completed</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-note">Sets status → <code>completed</code> and records <code>completed_at</code>.</div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method PATCH">PATCH</span>
+          <span class="endpoint-path">/api/queues/<span class="param">{id}</span>/skip/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Skip a patient (no-show)</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-note">Sets status → <code>skipped</code>. Patient stays in queue record for reporting.</div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/queues/summary/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Department-wise count summary for today</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <pre class="code-block"><span class="json-brace">{</span>
+  <span class="json-key">"Radiology"</span>: <span class="json-brace">{</span> <span class="json-key">"waiting"</span>: <span class="json-num">4</span>, <span class="json-key">"in_progress"</span>: <span class="json-num">1</span>, <span class="json-key">"completed"</span>: <span class="json-num">12</span> <span class="json-brace">}</span>,
+  <span class="json-key">"Ultrasound"</span>: <span class="json-brace">{</span> <span class="json-key">"waiting"</span>: <span class="json-num">2</span>, <span class="json-key">"completed"</span>: <span class="json-num">8</span> <span class="json-brace">}</span>
+<span class="json-brace">}</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ NOTIFICATIONS ══════════════ -->
+    <div class="section" id="notifications-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#22d3ee22;">🔔</div>
+        <h2>Notifications</h2>
+        <span class="section-path">Base: /api/notifications/</span>
+      </div>
+      <p class="section-intro">Auto-generated notifications for system events. Each user sees only notifications targeted at their role. Read-only — notifications are created by the system, not the frontend.</p>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/notifications/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">All notifications for current user's role</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <pre class="code-block"><span class="json-brace">[{</span>
+  <span class="json-key">"id"</span>: <span class="json-num">1</span>, <span class="json-key">"event_type"</span>: <span class="json-str">"payment_confirmed"</span>,
+  <span class="json-key">"patient_name"</span>: <span class="json-str">"Emeka Okafor"</span>,
+  <span class="json-key">"message"</span>: <span class="json-str">"Payment confirmed for Emeka Okafor. Added to queue."</span>,
+  <span class="json-key">"target_role"</span>: <span class="json-str">"receptionist"</span>,
+  <span class="json-key">"is_read"</span>: <span class="json-bool">false</span>,
+  <span class="json-key">"created_at"</span>: <span class="json-str">"2025-05-06T09:30:00Z"</span>
+<span class="json-brace">}]</span></pre>
+          <div style="margin-top:12px">
+            <div class="body-section-title">Event Types</div>
+            <div class="param-row"><span class="param-name">payment_confirmed</span><span class="param-desc" style="color:var(--muted)">Sent to: receptionist, admin</span></div>
+            <div class="param-row"><span class="param-name">patient_queued</span><span class="param-desc" style="color:var(--muted)">Sent to: doctor, admin</span></div>
+            <div class="param-row"><span class="param-name">diagnosis_completed</span><span class="param-desc" style="color:var(--muted)">Sent to: receptionist, admin</span></div>
+            <div class="param-row"><span class="param-name">general</span><span class="param-desc" style="color:var(--muted)">Sent to: all</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/notifications/unread/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Get unread count + latest 20</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <pre class="code-block"><span class="json-brace">{</span>
+  <span class="json-key">"count"</span>: <span class="json-num">3</span>,
+  <span class="json-key">"notifications"</span>: <span class="json-brace">[</span> <span class="json-str">/* up to 20 notification objects */</span> <span class="json-brace">]</span>
+<span class="json-brace">}</span></pre>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method PATCH">PATCH</span>
+          <span class="endpoint-path">/api/notifications/<span class="param">{id}</span>/mark-read/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Mark one notification as read</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-note">No request body. Returns <code>{ "message": "Marked as read." }</code></div>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method POST">POST</span>
+          <span class="endpoint-path">/api/notifications/mark-all-read/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Mark all unread as read</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <div class="body-note">Bulk-marks all of the current user's unread notifications.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ DASHBOARD ══════════════ -->
+    <div class="section" id="dashboard-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#ef444422;">📊</div>
+        <h2>Dashboard</h2>
+        <span class="section-path">Base: /api/dashboard/</span>
+      </div>
+      <p class="section-intro">Aggregated analytics endpoints. No models — these are computed views. All authenticated staff can access.</p>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/dashboard/summary/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Full dashboard KPIs for today</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <pre class="code-block"><span class="json-brace">{</span>
+  <span class="json-key">"date"</span>: <span class="json-str">"2025-05-06"</span>,
+  <span class="json-key">"patients"</span>: <span class="json-brace">{</span> <span class="json-key">"total"</span>: <span class="json-num">1240</span>, <span class="json-key">"new_today"</span>: <span class="json-num">8</span> <span class="json-brace">}</span>,
+  <span class="json-key">"visits"</span>: <span class="json-brace">{</span>
+    <span class="json-key">"total_today"</span>: <span class="json-num">32</span>, <span class="json-key">"completed"</span>: <span class="json-num">18</span>,
+    <span class="json-key">"in_queue"</span>: <span class="json-num">7</span>, <span class="json-key">"in_progress"</span>: <span class="json-num">4</span>,
+    <span class="json-key">"emergency"</span>: <span class="json-num">2</span>
+  <span class="json-brace">}</span>,
+  <span class="json-key">"revenue"</span>: <span class="json-brace">{</span>
+    <span class="json-key">"today"</span>: <span class="json-num">145000.00</span>, <span class="json-key">"this_month"</span>: <span class="json-num">2840000.00</span>,
+    <span class="json-key">"pending_count"</span>: <span class="json-num">5</span>, <span class="json-key">"pending_amount"</span>: <span class="json-num">62500.00</span>
+  <span class="json-brace">}</span>,
+  <span class="json-key">"queue_summary"</span>: <span class="json-brace">[</span> <span class="json-str">/* [{department, status, count}] */</span> <span class="json-brace">]</span>,
+  <span class="json-key">"weekly_trend"</span>: <span class="json-brace">[</span>
+    <span class="json-brace">{</span> <span class="json-key">"date"</span>: <span class="json-str">"2025-04-30"</span>, <span class="json-key">"visits"</span>: <span class="json-num">28</span>, <span class="json-key">"revenue"</span>: <span class="json-num">118000.0</span> <span class="json-brace">}</span>
+  <span class="json-brace">]</span>
+<span class="json-brace">}</span></pre>
+        </div>
+      </div>
+
+      <div class="endpoint">
+        <div class="endpoint-header" onclick="toggle(this)">
+          <span class="method GET">GET</span>
+          <span class="endpoint-path">/api/dashboard/workload/</span>
+          <span class="endpoint-auth auth-required">JWT</span>
+          <span class="endpoint-summary">Per-department workload for today</span>
+          <span class="chevron">▶</span>
+        </div>
+        <div class="endpoint-body">
+          <pre class="code-block"><span class="json-brace">[{</span>
+  <span class="json-key">"department"</span>: <span class="json-str">"Radiology"</span>,
+  <span class="json-key">"total"</span>: <span class="json-num">17</span>, <span class="json-key">"waiting"</span>: <span class="json-num">4</span>,
+  <span class="json-key">"in_progress"</span>: <span class="json-num">1</span>, <span class="json-key">"completed"</span>: <span class="json-num">12</span>
+<span class="json-brace">}]</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ WORKFLOW ══════════════ -->
+    <div class="section" id="workflow-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#6b7a9922;">🔄</div>
+        <h2>Patient Journey Workflow</h2>
+      </div>
+      <p class="section-intro">The complete step-by-step order of API calls for a patient visit — from registration to completion.</p>
+
+      <div class="auth-box">
+        <div class="auth-box-header">📍 Step-by-Step Flow</div>
+        <div style="padding: 20px; display: flex; flex-direction: column; gap: 0;">
+
+          <div style="display:flex; gap:16px; padding:14px 0; border-bottom:1px solid var(--border);">
+            <div style="min-width:26px; height:26px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">1</div>
+            <div>
+              <div style="font-family:var(--sans); font-weight:700; font-size:13px; color:var(--text); margin-bottom:4px;">Receptionist: Register Patient</div>
+              <code style="color:var(--purple)">POST /api/patients/records/</code>
+              <div style="color:var(--muted); font-size:12px; margin-top:4px;">Creates patient record, returns patient.id for next step</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:16px; padding:14px 0; border-bottom:1px solid var(--border);">
+            <div style="min-width:26px; height:26px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">2</div>
+            <div>
+              <div style="font-family:var(--sans); font-weight:700; font-size:13px; color:var(--text); margin-bottom:4px;">Receptionist: Create Visit</div>
+              <code style="color:var(--purple)">POST /api/patients/visits/</code> <code style="color:var(--muted)">{ patient: id, priority: "normal" }</code>
+              <div style="color:var(--muted); font-size:12px; margin-top:4px;">Visit status → <code>awaiting_payment</code></div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:16px; padding:14px 0; border-bottom:1px solid var(--border);">
+            <div style="min-width:26px; height:26px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">3</div>
+            <div>
+              <div style="font-family:var(--sans); font-weight:700; font-size:13px; color:var(--text); margin-bottom:4px;">Receptionist: Attach Services</div>
+              <code style="color:var(--purple)">POST /api/services/visit-services/</code> <code style="color:var(--muted)">{ visit: id, service: id }</code>
+              <div style="color:var(--muted); font-size:12px; margin-top:4px;">Repeat for each requested test. Price snapshotted automatically.</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:16px; padding:14px 0; border-bottom:1px solid var(--border);">
+            <div style="min-width:26px; height:26px; background:var(--yellow); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">4</div>
+            <div>
+              <div style="font-family:var(--sans); font-weight:700; font-size:13px; color:var(--text); margin-bottom:4px;">Finance: Create Payment Record</div>
+              <code style="color:var(--yellow)">POST /api/billing/payments/</code> <code style="color:var(--muted)">{ visit: id }</code>
+              <div style="color:var(--muted); font-size:12px; margin-top:4px;">Amount auto-totalled from services. Patient shown the bill.</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:16px; padding:14px 0; border-bottom:1px solid var(--border);">
+            <div style="min-width:26px; height:26px; background:var(--yellow); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">5</div>
+            <div>
+              <div style="font-family:var(--sans); font-weight:700; font-size:13px; color:var(--text); margin-bottom:4px;">Finance: Confirm Payment ⚡</div>
+              <code style="color:var(--yellow)">POST /api/billing/payments/{id}/confirm/</code>
+              <div style="color:var(--muted); font-size:12px; margin-top:4px;">This single call: marks paid → places in queue per department → sends notifications</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:16px; padding:14px 0; border-bottom:1px solid var(--border);">
+            <div style="min-width:26px; height:26px; background:var(--purple); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">6</div>
+            <div>
+              <div style="font-family:var(--sans); font-weight:700; font-size:13px; color:var(--text); margin-bottom:4px;">Doctor: View Queue & Call Patient</div>
+              <code style="color:var(--purple)">GET /api/queues/live/</code> then <code style="color:var(--purple)">PATCH /api/queues/{id}/call/</code>
+              <div style="color:var(--muted); font-size:12px; margin-top:4px;">Doctor sees their dept queue, calls the next patient</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:16px; padding:14px 0; border-bottom:1px solid var(--border);">
+            <div style="min-width:26px; height:26px; background:var(--purple); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">7</div>
+            <div>
+              <div style="font-family:var(--sans); font-weight:700; font-size:13px; color:var(--text); margin-bottom:4px;">Doctor: Complete Service & Upload Report</div>
+              <code style="color:var(--purple)">PATCH /api/services/visit-services/{id}/update-status/</code>
+              then <code style="color:var(--purple)">POST .../upload-report/</code>
+              <div style="color:var(--muted); font-size:12px; margin-top:4px;">When all services complete → visit auto-marked completed → receptionist notified</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:16px; padding:14px 0;">
+            <div style="min-width:26px; height:26px; background:var(--green); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">8</div>
+            <div>
+              <div style="font-family:var(--sans); font-weight:700; font-size:13px; color:var(--text); margin-bottom:4px;">Finance: Issue Receipt</div>
+              <code style="color:var(--green)">GET /api/billing/payments/{id}/receipt/</code>
+              <div style="color:var(--muted); font-size:12px; margin-top:4px;">Patient discharged with printed receipt</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ ERRORS ══════════════ -->
+    <div class="section" id="errors-section">
+      <div class="section-header">
+        <div class="section-icon" style="background:#6b7a9922;">⚠️</div>
+        <h2>Error Reference</h2>
+      </div>
+
+      <div class="auth-box">
+        <div class="auth-box-header">HTTP Status Codes</div>
+        <div style="padding: 16px;">
+          <div class="response-row"><span class="code-2xx">200</span><span class="response-desc">OK — request succeeded</span></div>
+          <div class="response-row"><span class="code-2xx">201</span><span class="response-desc">Created — resource created successfully</span></div>
+          <div class="response-row"><span class="code-2xx">204</span><span class="response-desc">No Content — successful DELETE</span></div>
+          <div class="response-row"><span class="code-4xx">400</span><span class="response-desc">Bad Request — validation error, check error body for field-level details</span></div>
+          <div class="response-row"><span class="code-4xx">401</span><span class="response-desc">Unauthorized — missing or invalid JWT token</span></div>
+          <div class="response-row"><span class="code-4xx">403</span><span class="response-desc">Forbidden — authenticated but insufficient role (e.g. receptionist hitting finance endpoint)</span></div>
+          <div class="response-row"><span class="code-4xx">404</span><span class="response-desc">Not Found — resource does not exist</span></div>
+          <div class="response-row"><span class="code-5xx">500</span><span class="response-desc">Server Error — unexpected server-side issue</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <div class="body-section-title">Validation Error Format (400)</div>
+        <pre class="code-block"><span class="json-brace">{</span>
+  <span class="json-key">"field_name"</span>: <span class="json-brace">[</span><span class="json-str">"This field is required."</span><span class="json-brace">]</span>,
+  <span class="json-key">"another_field"</span>: <span class="json-brace">[</span><span class="json-str">"Ensure this value has at most 20 characters."</span><span class="json-brace">]</span>
+<span class="json-brace">}</span></pre>
+
+        <div class="body-section-title" style="margin-top:16px">Auth Error Format (401)</div>
+        <pre class="code-block"><span class="json-brace">{</span> <span class="json-key">"error"</span>: <span class="json-str">"Invalid credentials."</span> <span class="json-brace">}</span></pre>
+
+        <div class="body-section-title" style="margin-top:16px">Pagination Format</div>
+        <pre class="code-block"><span class="json-brace">{</span>
+  <span class="json-key">"count"</span>: <span class="json-num">150</span>,
+  <span class="json-key">"next"</span>: <span class="json-str">"https://api.../endpoint/?page=2"</span>,
+  <span class="json-key">"previous"</span>: <span class="json-null">null</span>,
+  <span class="json-key">"results"</span>: <span class="json-brace">[</span> <span class="json-str">/* items */</span> <span class="json-brace">]</span>
+<span class="json-brace">}</span></pre>
+        <div class="body-note" style="margin-top:12px">📄 All list endpoints are paginated at <strong>20 items per page</strong>. Use <code>?page=N</code> to paginate.</div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid var(--border); padding-top: 24px; margin-top: 16px; color: var(--muted); font-size: 12px;">
+      Hospital Diagnostic System API Reference &nbsp;·&nbsp; Generated from source code &nbsp;·&nbsp; TIME_ZONE: Africa/Lagos
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  function toggle(header) {
+    const ep = header.closest('.endpoint');
+    ep.classList.toggle('open');
+  }
+
+  function scrollTo(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+  }
+
+  // Highlight active section on scroll
+  const sections = ['overview','auth-section','roles-section','patients-section','visits-section',
+    'staff-section','services-section','visit-services-section','billing-section',
+    'queues-section','notifications-section','dashboard-section','workflow-section','errors-section'];
+
+  const links = document.querySelectorAll('.sidebar-link');
+
+  window.addEventListener('scroll', () => {
+    const main = document.querySelector('.main');
+    // not used, sections are in main scroll area — observe via IntersectionObserver
+  }, { passive: true });
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+# ─── ENVIRONMENT & SECRETS ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── PYTHON ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*$py.class
+*.so
+
+# ─── VIRTUAL ENVIRONMENTS ─────────────────────────────────────────────────────
+venv/
+env/
+.venv/
+.env/
+ENV/
+
+# ─── DJANGO ───────────────────────────────────────────────────────────────────
+*.log
+*.pot
+db.sqlite3
+hospital.db
+staticfiles/
+media/
+local_settings.py
+
+# ─── DISTRIBUTION / PACKAGING ─────────────────────────────────────────────────
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+MANIFEST
+
+# ─── TESTING ──────────────────────────────────────────────────────────────────
+.coverage
+.tox/
+.pytest_cache/
+htmlcov/
+coverage.xml
+*.cover
+nosetests.xml
+
+# ─── EDITORS & IDEs ───────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# ─── OS FILES ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── VERCEL ───────────────────────────────────────────────────────────────────
+.vercel/
