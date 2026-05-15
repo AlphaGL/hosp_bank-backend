@@ -1,91 +1,203 @@
-from rest_framework import viewsets, status, filters
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy, reverse
 from django.utils import timezone
+from django.views.generic import (
+    ListView, DetailView, CreateView, UpdateView, View
+)
+from django.http import HttpResponse
+
 from .models import Payment
-from .serializers import PaymentSerializer, PaymentConfirmSerializer
+from .forms import PaymentCreateForm, PaymentConfirmForm, PaymentFilterForm
 from patients.models import Visit
-from patients.permissions import IsFinance, IsAdmin
 from notifications.utils import create_notification
 
 
-class PaymentViewSet(viewsets.ModelViewSet):
-    queryset = Payment.objects.select_related('visit__patient', 'processed_by').all()
-    serializer_class = PaymentSerializer
-    filter_backends = [filters.OrderingFilter]
-    ordering_fields = ['created_at', 'paid_at', 'amount_due']
+# ---------------------------------------------------------------------------
+# Permission mixins (replaces DRF IsFinance / IsAuthenticated permission classes)
+# ---------------------------------------------------------------------------
 
-    def get_permissions(self):
-        if self.action in ['confirm_payment', 'create']:
-            return [IsFinance()]
-        return [IsAuthenticated()]
+class FinanceRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """Only Finance staff (or admins) may access this view."""
+    def test_func(self):
+        user = self.request.user
+        return user.is_superuser or getattr(user, 'role', None) in ('finance', 'admin')
+
+
+# ---------------------------------------------------------------------------
+# List  (GET /payments/)
+# ---------------------------------------------------------------------------
+
+class PaymentListView(LoginRequiredMixin, ListView):
+    """
+    Replaces: PaymentViewSet.list()
+    Supports ?status=, ?date=, ?patient= query params via PaymentFilterForm.
+    """
+    model = Payment
+    template_name = 'payments/payment_list.html'
+    context_object_name = 'payments'
+    paginate_by = 25
+    ordering = ['-created_at']
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        status_filter = self.request.query_params.get('status')
-        date = self.request.query_params.get('date')
-        patient_id = self.request.query_params.get('patient')
-        if status_filter:
-            qs = qs.filter(status=status_filter)
-        if date:
-            qs = qs.filter(created_at__date=date)
-        if patient_id:
-            qs = qs.filter(visit__patient__patient_id=patient_id)
+        qs = (
+            Payment.objects
+            .select_related('visit__patient', 'processed_by')
+            .order_by('-created_at')
+        )
+        form = PaymentFilterForm(self.request.GET)
+        if form.is_valid():
+            if form.cleaned_data.get('status'):
+                qs = qs.filter(status=form.cleaned_data['status'])
+            if form.cleaned_data.get('date'):
+                qs = qs.filter(created_at__date=form.cleaned_data['date'])
+            if form.cleaned_data.get('patient'):
+                qs = qs.filter(visit__patient__patient_id=form.cleaned_data['patient'])
         return qs
 
-    def perform_create(self, serializer):
-        """Auto-calculate amount_due from visit services."""
-        visit = serializer.validated_data['visit']
-        amount_due = sum(vs.price_at_booking for vs in visit.visit_services.all())
-        serializer.save(amount_due=amount_due, processed_by=self.request.user)
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['filter_form'] = PaymentFilterForm(self.request.GET)
+        return ctx
 
-    @action(detail=True, methods=['post'], url_path='confirm')
-    def confirm_payment(self, request, pk=None):
-        payment = self.get_object()
+
+# ---------------------------------------------------------------------------
+# Detail  (GET /payments/<pk>/)
+# ---------------------------------------------------------------------------
+
+class PaymentDetailView(LoginRequiredMixin, DetailView):
+    """
+    Replaces: PaymentViewSet.retrieve()
+    Also provides the PaymentConfirmForm so the confirm action can be
+    triggered from the same page.
+    """
+    model = Payment
+    template_name = 'payments/payment_detail.html'
+    context_object_name = 'payment'
+
+    def get_queryset(self):
+        return Payment.objects.select_related('visit__patient', 'processed_by')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['confirm_form'] = PaymentConfirmForm()
+        ctx['services'] = self.object.visit.visit_services.select_related('service').all()
+        return ctx
+
+
+# ---------------------------------------------------------------------------
+# Create  (GET+POST /payments/new/)
+# ---------------------------------------------------------------------------
+
+class PaymentCreateView(FinanceRequiredMixin, CreateView):
+    """
+    Replaces: PaymentViewSet.create() + perform_create()
+    Auto-calculates amount_due from visit services.
+    """
+    model = Payment
+    form_class = PaymentCreateForm
+    template_name = 'payments/payment_form.html'
+
+    def get_success_url(self):
+        return reverse('payments:detail', kwargs={'pk': self.object.pk})
+
+    def form_valid(self, form):
+        visit = form.cleaned_data['visit']
+        amount_due = sum(vs.price_at_booking for vs in visit.visit_services.all())
+        payment = form.save(commit=False)
+        payment.amount_due = amount_due
+        payment.processed_by = self.request.user
+        payment.save()
+        self.object = payment
+        messages.success(self.request, f"Payment record created — {payment.receipt_number}")
+        return redirect(self.get_success_url())
+
+
+# ---------------------------------------------------------------------------
+# Confirm payment  (POST /payments/<pk>/confirm/)
+# ---------------------------------------------------------------------------
+
+class PaymentConfirmView(FinanceRequiredMixin, View):
+    """
+    Replaces: PaymentViewSet.confirm_payment() custom action.
+    POST-only; redirects back to the detail page.
+    """
+    def post(self, request, pk):
+        payment = get_object_or_404(Payment, pk=pk)
 
         if payment.status == Payment.STATUS_PAID:
-            return Response({'error': 'Payment already confirmed.'}, status=status.HTTP_400_BAD_REQUEST)
+            messages.error(request, "Payment has already been confirmed.")
+            return redirect(reverse('payments:detail', kwargs={'pk': pk}))
 
-        serializer = PaymentConfirmSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        form = PaymentConfirmForm(request.POST)
+        if not form.is_valid():
+            # Re-render detail page with form errors
+            from django.shortcuts import render
+            services = payment.visit.visit_services.select_related('service').all()
+            return render(request, 'payments/payment_detail.html', {
+                'payment': payment,
+                'confirm_form': form,
+                'services': services,
+            })
 
-        data = serializer.validated_data
+        data = form.cleaned_data
         payment.amount_paid = data['amount_paid']
         payment.payment_method = data['payment_method']
         payment.transaction_ref = data.get('transaction_ref', '')
         payment.notes = data.get('notes', '')
         payment.processed_by = request.user
         payment.paid_at = timezone.now()
-        payment.status = Payment.STATUS_PAID if payment.is_fully_paid else Payment.STATUS_PENDING
+        payment.status = (
+            Payment.STATUS_PAID if payment.is_fully_paid else Payment.STATUS_PENDING
+        )
         payment.save()
 
         if payment.status == Payment.STATUS_PAID:
-            # Update visit status & add to queue
             visit = payment.visit
             visit.status = Visit.STATUS_PAID
             visit.save(update_fields=['status'])
 
-            # Auto-add to queue per department
             from queues.utils import add_visit_to_queues
             add_visit_to_queues(visit)
 
-            # Notify front desk
             create_notification(
                 event_type='payment_confirmed',
                 visit=visit,
                 message=f"Payment confirmed for {visit.patient.full_name}. Added to queue.",
             )
+            messages.success(request, "Payment confirmed and patient added to queue.")
+        else:
+            messages.warning(
+                request,
+                f"Partial payment recorded. Outstanding balance: {payment.balance}"
+            )
 
-        return Response(PaymentSerializer(payment).data)
+        return redirect(reverse('payments:detail', kwargs={'pk': pk}))
 
-    @action(detail=True, methods=['get'], url_path='receipt')
-    def receipt(self, request, pk=None):
+
+# ---------------------------------------------------------------------------
+# Receipt  (GET /payments/<pk>/receipt/)
+# ---------------------------------------------------------------------------
+
+class PaymentReceiptView(LoginRequiredMixin, DetailView):
+    """
+    Replaces: PaymentViewSet.receipt() custom action.
+    Renders a print-friendly receipt template for paid invoices.
+    """
+    model = Payment
+    template_name = 'payments/payment_receipt.html'
+    context_object_name = 'payment'
+
+    def get(self, request, *args, **kwargs):
         payment = self.get_object()
         if payment.status != Payment.STATUS_PAID:
-            return Response({'error': 'Receipt only available for paid invoices.'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        data = PaymentSerializer(payment).data
-        data['receipt_generated_at'] = timezone.now().isoformat()
-        return Response(data)
+            messages.error(request, "Receipt is only available for paid invoices.")
+            return redirect(reverse('payments:detail', kwargs={'pk': payment.pk}))
+        return super().get(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['receipt_generated_at'] = timezone.now()
+        ctx['services'] = self.object.visit.visit_services.select_related('service').all()
+        return ctx

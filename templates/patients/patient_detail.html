@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}{{ patient.full_name }} — MediCore HMS{% endblock %}
+{% block page_title %}Patient Detail{% endblock %}
+{% block nav_patients %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div class="detail-avatar">{{ patient.first_name|first|upper }}{{ patient.last_name|first|upper }}</div>
+            <div>
+                <h1 class="page-title">{{ patient.full_name }}</h1>
+                <span class="pid-chip" style="margin-top:4px;display:inline-block;">{{ patient.patient_id }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="page-header-actions">
+        <a href="{% url 'patients:patient-list' %}" class="btn btn-ghost btn-sm">← Back</a>
+        <a href="{% url 'patients:patient-update' patient.pk %}" class="btn btn-secondary btn-sm">Edit Patient</a>
+        <a href="{% url 'patients:visit-create' %}?patient={{ patient.pk }}" class="btn btn-primary btn-sm">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            New Visit
+        </a>
+    </div>
+</div>
+
+<!-- INFO GRID -->
+<div class="detail-grid">
+    <!-- Personal Info -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Personal Information</span>
+        </div>
+        <div class="card-body">
+            <dl class="info-list">
+                <div class="info-row">
+                    <dt>Age</dt>
+                    <dd>{{ patient.age }} years</dd>
+                </div>
+                <div class="info-row">
+                    <dt>Gender</dt>
+                    <dd>{{ patient.get_gender_display }}</dd>
+                </div>
+                <div class="info-row">
+                    <dt>Phone</dt>
+                    <dd style="font-family:'JetBrains Mono',monospace;font-size:13px;">{{ patient.phone }}</dd>
+                </div>
+                <div class="info-row">
+                    <dt>Email</dt>
+                    <dd>{{ patient.email|default:"—" }}</dd>
+                </div>
+                <div class="info-row">
+                    <dt>Address</dt>
+                    <dd>{{ patient.address|default:"—" }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Registration Info -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Registration Details</span>
+        </div>
+        <div class="card-body">
+            <dl class="info-list">
+                <div class="info-row">
+                    <dt>Registered by</dt>
+                    <dd>{{ patient.registered_by.get_full_name|default:patient.registered_by.username|default:"—" }}</dd>
+                </div>
+                <div class="info-row">
+                    <dt>Date registered</dt>
+                    <dd>{{ patient.created_at|date:"d M Y, H:i" }}</dd>
+                </div>
+                <div class="info-row">
+                    <dt>Last updated</dt>
+                    <dd>{{ patient.updated_at|date:"d M Y, H:i" }}</dd>
+                </div>
+                <div class="info-row">
+                    <dt>Total visits</dt>
+                    <dd>
+                        <span class="badge badge-registered">{{ visits.count }} visit{{ visits.count|pluralize }}</span>
+                    </dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+</div>
+
+<!-- VISIT HISTORY -->
+<div class="card" style="margin-top:24px;">
+    <div class="card-header">
+        <span class="card-title">Visit History</span>
+        <a href="{% url 'patients:visit-create' %}?patient={{ patient.pk }}" class="btn btn-primary btn-sm">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            New Visit
+        </a>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Visit #</th>
+                <th>Date</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Created By</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in visits %}
+            <tr>
+                <td><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--text-muted);">#{{ v.pk }}</span></td>
+                <td style="color:var(--text-muted);">{{ v.visit_date|date:"d M Y" }}</td>
+                <td>
+                    {% if v.priority == 'emergency' %}
+                        <span class="badge badge-emergency">Emergency</span>
+                    {% else %}
+                        <span class="badge badge-normal">Normal</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if v.status == 'completed' %}
+                        <span class="badge badge-completed">Completed</span>
+                    {% elif v.status == 'in_progress' %}
+                        <span class="badge badge-in_progress">In Progress</span>
+                    {% elif v.status == 'awaiting_payment' %}
+                        <span class="badge badge-awaiting_payment">Awaiting Payment</span>
+                    {% elif v.status == 'paid' %}
+                        <span class="badge badge-refunded">Paid</span>
+                    {% elif v.status == 'in_queue' %}
+                        <span class="badge badge-in_queue">In Queue</span>
+                    {% elif v.status == 'cancelled' %}
+                        <span class="badge badge-cancelled">Cancelled</span>
+                    {% else %}
+                        <span class="badge badge-registered">{{ v.get_status_display }}</span>
+                    {% endif %}
+                </td>
+                <td style="color:var(--text-secondary);">{{ v.created_by.get_full_name|default:v.created_by.username|default:"—" }}</td>
+                <td>
+                    <a href="{% url 'patients:visit-detail' v.pk %}" class="btn btn-ghost btn-sm">View</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+                        </div>
+                        <p>No visits on record for this patient.</p>
+                        <a href="{% url 'patients:visit-create' %}?patient={{ patient.pk }}" class="btn btn-primary btn-sm">Create First Visit</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+.detail-avatar {
+    width:60px;height:60px;
+    background:linear-gradient(135deg,var(--blue) 0%,var(--teal) 100%);
+    border-radius:50%;
+    display:grid;place-items:center;
+    font-size:20px;font-weight:700;color:white;flex-shrink:0;
+    box-shadow:0 4px 12px rgba(26,86,219,0.25);
+}
+.pid-chip {
+    background:var(--blue-soft);color:var(--blue);
+    padding:3px 10px;border-radius:6px;
+    font-size:12px;font-weight:700;
+    font-family:'JetBrains Mono',monospace;
+}
+.detail-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    margin-bottom:0;
+}
+@media (max-width:700px) { .detail-grid { grid-template-columns:1fr; } }
+.info-list { display:flex;flex-direction:column;gap:0; }
+.info-row {
+    display:flex;align-items:baseline;
+    padding:11px 0;
+    border-bottom:1px solid var(--border-light);
+    gap:12px;
+}
+.info-row:last-child { border-bottom:none; }
+.info-row dt {
+    width:130px;flex-shrink:0;
+    font-size:12px;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.5px;
+    color:var(--text-muted);
+}
+.info-row dd { color:var(--text-primary);font-size:13.5px; }
+.empty-state {
+    display:flex;flex-direction:column;align-items:center;gap:12px;
+    padding:48px 20px;
+}
+.empty-icon {
+    width:52px;height:52px;background:var(--surface-2);
+    border-radius:50%;display:grid;place-items:center;
+}
+.empty-icon svg { width:26px;height:26px;fill:var(--text-light); }
+.empty-state p { font-size:14px;color:var(--text-muted); }
+</style>
+{% endblock %}

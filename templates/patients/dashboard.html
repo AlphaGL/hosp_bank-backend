@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — MediCore HMS{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Good day, {{ user.first_name }} 👋</h1>
+        <p class="page-subtitle">Here's what's happening at the hospital today.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'patients:patient-create' %}" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            New Patient
+        </a>
+        <a href="{% url 'patients:visit-create' %}" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            New Visit
+        </a>
+    </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="stats-grid">
+    <div class="stat-card stat-blue">
+        <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ total_patients }}</div>
+            <div class="stat-label">Total Patients</div>
+        </div>
+        <div class="stat-trend up">All time</div>
+    </div>
+
+    <div class="stat-card stat-teal">
+        <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ today_visits }}</div>
+            <div class="stat-label">Today's Visits</div>
+        </div>
+        <div class="stat-trend">Today</div>
+    </div>
+
+    <div class="stat-card stat-warn">
+        <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ pending_visits }}</div>
+            <div class="stat-label">Pending Visits</div>
+        </div>
+        <div class="stat-trend warn">Needs attention</div>
+    </div>
+
+    <div class="stat-card stat-success">
+        <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ completed_today }}</div>
+            <div class="stat-label">Completed Today</div>
+        </div>
+        <div class="stat-trend up">Today</div>
+    </div>
+</div>
+
+<!-- RECENT VISITS -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Recent Visits</h2>
+        <a href="{% url 'patients:visit-list' %}" class="btn btn-ghost btn-sm">View all</a>
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Visit #</th>
+                    <th>Patient</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Registered by</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for visit in recent_visits %}
+                <tr>
+                    <td><span class="mono">#{{ visit.pk }}</span></td>
+                    <td>
+                        <div class="patient-cell">
+                            <div class="avatar-sm">{{ visit.patient.first_name|first|upper }}{{ visit.patient.last_name|first|upper }}</div>
+                            <div>
+                                <div class="fw-600">{{ visit.patient.full_name }}</div>
+                                <div class="text-muted fs-12">{{ visit.patient.patient_id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-muted">{{ visit.visit_date|date:"M d, Y" }}</td>
+                    <td><span class="status-badge status-{{ visit.status }}">{{ visit.get_status_display }}</span></td>
+                    <td>
+                        {% if visit.priority == 'emergency' %}
+                        <span class="priority-badge priority-emergency">Emergency</span>
+                        {% else %}
+                        <span class="priority-badge priority-normal">Normal</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted">{{ visit.created_by.get_full_name|default:"—" }}</td>
+                    <td>
+                        <a href="{% url 'patients:visit-detail' visit.pk %}" class="btn btn-ghost btn-xs">View</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+                            <p>No visits recorded yet.</p>
+                            <a href="{% url 'patients:visit-create' %}" class="btn btn-primary btn-sm">Create First Visit</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SERVICES SECTION
+════════════════════════════════════════════════════ -->
+<div class="section-divider">
+    <span>Diagnostic Services</span>
+</div>
+
+<!-- QUICK LINKS ROW -->
+<div class="svc-quicklinks">
+    <a href="{% url 'services:catalogue-list' %}" class="svc-link">
+        <div class="svc-link-icon" style="background:var(--blue-light);color:var(--blue);">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 3.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v20l1.5-1.5L6 22l1.5-1.5L9 22l1.5-1.5L12 22l1.5-1.5L15 22l1.5-1.5L18 22l1.5-1.5L21 22V2l-1.5 1.5zM19 19.09H5V4.91h14v14.18zM6 15h12v2H6zm0-4h12v2H6zm0-4h12v2H6z"/></svg>
+        </div>
+        <div>
+            <div class="svc-link-title">Service Catalogue</div>
+            <div class="svc-link-sub">{{ total_services }} active service{{ total_services|pluralize }}</div>
+        </div>
+    </a>
+
+    <a href="{% url 'services:visit-service-list' %}" class="svc-link">
+        <div class="svc-link-icon" style="background:var(--teal-light);color:var(--teal);">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4zm2.5 2.1h-15V5h15v14.1zm0-16.1h-15c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+        </div>
+        <div>
+            <div class="svc-link-title">All Requests</div>
+            <div class="svc-link-sub">{{ pending_service_requests }} pending</div>
+        </div>
+    </a>
+
+    <a href="{% url 'services:visit-service-list' %}?status=pending" class="svc-link">
+        <div class="svc-link-icon" style="background:var(--warn-light);color:var(--warn);">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <div>
+            <div class="svc-link-title">Pending Services</div>
+            <div class="svc-link-sub">Awaiting action</div>
+        </div>
+    </a>
+
+    <a href="{% url 'services:visit-service-create' %}" class="svc-link svc-link-action">
+        <div class="svc-link-icon" style="background:rgba(26,86,219,.12);color:var(--blue);">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+        <div>
+            <div class="svc-link-title">Add Service to Visit</div>
+            <div class="svc-link-sub">Attach a diagnostic service</div>
+        </div>
+    </a>
+</div>
+
+<!-- VISITS WITHOUT SERVICES -->
+{% if visits_without_services %}
+<div class="card" style="border-left:3px solid var(--warn);">
+    <div class="card-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;color:var(--warn);fill:var(--warn);flex-shrink:0;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+            <h2 class="card-title" style="color:var(--warn);">Visits Without Services</h2>
+            <span class="count-badge">{{ visits_without_services|length }}</span>
+        </div>
+        <a href="{% url 'patients:visit-list' %}" class="btn btn-ghost btn-sm">View all visits</a>
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Visit #</th>
+                    <th>Patient</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in visits_without_services %}
+                <tr>
+                    <td><span class="mono" style="font-size:12px;">#{{ v.pk }}</span></td>
+                    <td>
+                        <div class="patient-cell">
+                            <div class="avatar-sm">{{ v.patient.first_name|first|upper }}{{ v.patient.last_name|first|upper }}</div>
+                            <div>
+                                <div class="fw-600">{{ v.patient.full_name }}</div>
+                                <div class="text-muted fs-12">{{ v.patient.patient_id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-muted">{{ v.visit_date|date:"M d, Y" }}</td>
+                    <td><span class="status-badge status-{{ v.status }}">{{ v.get_status_display }}</span></td>
+                    <td>
+                        {% if v.priority == 'emergency' %}
+                        <span class="priority-badge priority-emergency">Emergency</span>
+                        {% else %}
+                        <span class="priority-badge priority-normal">Normal</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display:flex;gap:6px;">
+                            <a href="{% url 'services:visit-service-create' %}?visit={{ v.pk }}"
+                               class="btn btn-primary btn-xs">+ Add Service</a>
+                            <a href="{% url 'patients:visit-detail' v.pk %}"
+                               class="btn btn-ghost btn-xs">View</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="all-clear">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    All active visits have services attached.
+</div>
+{% endif %}
+
+<style>
+/* ── existing stat-card styles (unchanged) ── */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.stat-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow var(--transition), transform var(--transition);
+}
+.stat-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    opacity: 0.06;
+    transform: translate(20px, -20px);
+}
+.stat-blue  { border-top: 3px solid var(--blue); }
+.stat-blue .stat-icon { background: var(--blue-light); color: var(--blue); }
+.stat-blue::after { background: var(--blue); }
+.stat-teal  { border-top: 3px solid var(--teal); }
+.stat-teal .stat-icon { background: var(--teal-light); color: var(--teal); }
+.stat-warn  { border-top: 3px solid var(--warn); }
+.stat-warn .stat-icon { background: var(--warn-light); color: var(--warn); }
+.stat-success { border-top: 3px solid var(--success); }
+.stat-success .stat-icon { background: var(--success-light); color: var(--success); }
+.stat-icon { width:48px;height:48px;border-radius:var(--radius);display:grid;place-items:center;flex-shrink:0; }
+.stat-icon svg { width:22px;height:22px; }
+.stat-content { flex:1; }
+.stat-value { font-family:'Lora',serif;font-size:30px;font-weight:700;color:var(--text-primary);line-height:1;margin-bottom:4px; }
+.stat-label { font-size:12.5px;color:var(--text-muted);font-weight:500; }
+.stat-trend { position:absolute;bottom:12px;right:14px;font-size:11px;font-weight:600;color:var(--text-muted); }
+.stat-trend.up { color:var(--success); }
+.stat-trend.warn { color:var(--warn); }
+
+/* ── section divider ── */
+.section-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 28px 0 18px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+.section-divider::before,
+.section-divider::after { content:'';flex:1;height:1px;background:var(--border-light); }
+
+/* ── quick link row ── */
+.svc-quicklinks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.svc-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    text-decoration: none;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+}
+.svc-link:hover {
+    box-shadow: var(--shadow);
+    transform: translateY(-2px);
+    border-color: var(--blue);
+    text-decoration: none;
+    color: var(--text-primary);
+}
+.svc-link-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--radius);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+}
+.svc-link-icon svg { width: 20px; height: 20px; }
+.svc-link-title { font-weight: 700; font-size: 13.5px; }
+.svc-link-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── visits-without-services table badges ── */
+.count-badge {
+    background: var(--warn);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+}
+.status-badge { display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600; }
+.status-registered       { background:var(--surface-2);color:var(--text-muted); }
+.status-awaiting_payment { background:rgba(234,179,8,.15);color:#854d0e; }
+.status-paid             { background:rgba(6,182,212,.12);color:#0e7490; }
+.status-in_queue         { background:rgba(59,130,246,.12);color:var(--blue); }
+.status-in_progress      { background:rgba(124,58,237,.1);color:#6d28d9; }
+.status-completed        { background:rgba(5,150,105,.15);color:#065f46; }
+.status-cancelled        { background:rgba(239,68,68,.12);color:#b91c1c; }
+
+/* ── all-clear banner ── */
+.all-clear {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--success-light);
+    color: var(--success);
+    border-radius: var(--radius-lg);
+    padding: 14px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.all-clear svg { width:18px;height:18px;fill:var(--success);flex-shrink:0; }
+</style>
+{% endblock %}

@@ -1,7 +1,18 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import NotificationViewSet
+from django.urls import path
+from .views import (
+    NotificationListView,
+    NotificationDetailView,
+    UnreadNotificationsView,
+    MarkNotificationReadView,
+    MarkAllReadView,
+)
 
-router = DefaultRouter()
-router.register('', NotificationViewSet, basename='notification')
-urlpatterns = [path('', include(router.urls))]
+app_name = 'notifications'
+
+urlpatterns = [
+    path('', NotificationListView.as_view(), name='list'),
+    path('<int:pk>/', NotificationDetailView.as_view(), name='detail'),
+    path('unread/', UnreadNotificationsView.as_view(), name='unread'),
+    path('<int:pk>/mark-read/', MarkNotificationReadView.as_view(), name='mark-read'),
+    path('mark-all-read/', MarkAllReadView.as_view(), name='mark-all-read'),
+]

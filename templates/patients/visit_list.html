@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Visits{% endblock %}
+{% block nav_visits %}active{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h4 mb-0">Visits</h1>
+  <a href="{% url 'patients:visit-create' %}" class="btn btn-primary">+ New Visit</a>
+</div>
+
+<form method="get" class="row g-2 mb-4">
+  <div class="col-auto">{{ filter_form.status }}</div>
+  <div class="col-auto">{{ filter_form.priority }}</div>
+  <div class="col-auto">{{ filter_form.date }}</div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-sm btn-secondary">Filter</button>
+    <a href="{% url 'patients:visit-list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+  </div>
+</form>
+
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr><th>#</th><th>Patient</th><th>Date</th><th>Priority</th><th>Status</th><th>Created by</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for v in visits %}
+      <tr>
+        <td>{{ v.pk }}</td>
+        <td>
+          <a href="{% url 'patients:patient-detail' v.patient.pk %}">{{ v.patient.full_name }}</a>
+          <div class="text-muted small"><code>{{ v.patient.patient_id }}</code></div>
+        </td>
+        <td>{{ v.visit_date|date:"d M Y" }}</td>
+        <td><span class="badge {% if v.priority == 'emergency' %}bg-danger{% else %}bg-secondary{% endif %}">{{ v.get_priority_display }}</span></td>
+        <td>
+          <span class="badge
+            {% if v.status == 'completed' %}bg-success
+            {% elif v.status == 'in_progress' %}bg-primary
+            {% elif v.status == 'awaiting_payment' %}bg-warning text-dark
+            {% elif v.status == 'paid' %}bg-info
+            {% else %}bg-secondary{% endif %}">
+            {{ v.get_status_display }}
+          </span>
+        </td>
+        <td>{{ v.created_by.get_full_name|default:v.created_by.username|default:"—" }}</td>
+        <td><a href="{% url 'patients:visit-detail' v.pk %}" class="btn btn-sm btn-outline-primary">View</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center text-muted py-4">No visits found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<nav>
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

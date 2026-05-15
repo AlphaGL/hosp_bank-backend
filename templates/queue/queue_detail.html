@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Q#{{ entry.queue_number }} — {{ entry.visit.patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="queue-detail">
+  <h1>Q#{{ entry.queue_number }} &mdash; {{ entry.department }}</h1>
+
+  <dl class="detail-grid">
+    <dt>Patient</dt>
+    <dd>{{ entry.visit.patient.full_name }}</dd>
+
+    <dt>Patient ID</dt>
+    <dd>{{ entry.visit.patient.patient_id }}</dd>
+
+    <dt>Priority</dt>
+    <dd>{{ entry.visit.priority }}</dd>
+
+    <dt>Status</dt>
+    <dd>{{ entry.get_status_display }}</dd>
+
+    <dt>Date</dt>
+    <dd>{{ entry.date }}</dd>
+
+    <dt>Called At</dt>
+    <dd>{{ entry.called_at|default:"Not yet called" }}</dd>
+
+    <dt>Completed At</dt>
+    <dd>{{ entry.completed_at|default:"Not yet completed" }}</dd>
+
+    <dt>Attended By</dt>
+    <dd>{{ entry.attended_by.get_full_name|default:"—" }}</dd>
+  </dl>
+
+  <div class="detail-actions">
+    {% if entry.status == 'waiting' %}
+      <form method="post" action="{% url 'queue:call' entry.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Call Patient</button>
+      </form>
+      <form method="post" action="{% url 'queue:skip' entry.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning">Skip</button>
+      </form>
+    {% elif entry.status == 'in_progress' %}
+      <form method="post" action="{% url 'queue:complete' entry.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Mark Complete</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <a href="{% url 'queue:list' %}" class="btn btn-secondary">← Back to list</a>
+</div>
+{% endblock %}

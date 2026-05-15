@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications — MediCore HMS{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block nav_notifications %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Notifications</h1>
+        <p class="page-subtitle">All alerts and updates for your role</p>
+    </div>
+    <div class="page-header-actions">
+        <form method="post" action="{% url 'notifications:mark-all-read' %}" id="mark-all-form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-sm" id="mark-all-btn">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 7l-1.41-1.41-6.34 6.34-2.83-2.83L6 10.5l4.24 4.24L18 7zm-11.5 9H5V3h14v9.09c.72.12 1.39.37 2 .72V3c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v18l4-4h4.09c-.06-.33-.09-.66-.09-1 0-.34.03-.67.09-1H7.41l-.91.91z"/></svg>
+                Mark all read
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="toolbar">
+    <form method="get" id="filter-form" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1;">
+        <div class="search-bar">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search notifications…">
+        </div>
+        <select name="event_type" class="filter-select" onchange="this.form.submit()">
+            <option value="">All types</option>
+            <option value="payment_confirmed" {% if request.GET.event_type == 'payment_confirmed' %}selected{% endif %}>Payment Confirmed</option>
+            <option value="patient_queued"    {% if request.GET.event_type == 'patient_queued'    %}selected{% endif %}>Patient Queued</option>
+            <option value="diagnosis_completed" {% if request.GET.event_type == 'diagnosis_completed' %}selected{% endif %}>Diagnosis Completed</option>
+            <option value="general"           {% if request.GET.event_type == 'general'           %}selected{% endif %}>General</option>
+        </select>
+        <select name="is_read" class="filter-select" onchange="this.form.submit()">
+            <option value="">All status</option>
+            <option value="false" {% if request.GET.is_read == 'false' %}selected{% endif %}>Unread</option>
+            <option value="true"  {% if request.GET.is_read == 'true'  %}selected{% endif %}>Read</option>
+        </select>
+    </form>
+</div>
+
+{% if notifications %}
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:40px;"></th>
+                <th>Message</th>
+                <th>Type</th>
+                <th>Patient</th>
+                <th>Role</th>
+                <th>Time</th>
+                <th style="width:100px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for notif in notifications %}
+            <tr class="{% if not notif.is_read %}notif-row-unread{% endif %}" data-id="{{ notif.pk }}">
+                <td style="text-align:center;">
+                    {% if not notif.is_read %}
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--blue);"></span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'notifications:detail' notif.pk %}" style="color:var(--text-primary);text-decoration:none;font-weight:{% if not notif.is_read %}600{% else %}400{% endif %};">
+                        {{ notif.message|truncatechars:80 }}
+                    </a>
+                </td>
+                <td>
+                    {% if notif.event_type == 'payment_confirmed' %}
+                        <span class="badge badge-success">Payment</span>
+                    {% elif notif.event_type == 'patient_queued' %}
+                        <span class="badge badge-warn">Queued</span>
+                    {% elif notif.event_type == 'diagnosis_completed' %}
+                        <span class="badge badge-info">Diagnosis</span>
+                    {% else %}
+                        <span class="badge badge-registered">General</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if notif.visit %}
+                        <a href="{% url 'patients:visit-detail' notif.visit.pk %}" style="color:var(--blue);text-decoration:none;font-weight:500;">
+                            {{ notif.visit.patient.full_name }}
+                        </a>
+                    {% else %}
+                        <span style="color:var(--text-muted);">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge badge-registered" style="text-transform:capitalize;">{{ notif.get_target_role_display }}</span>
+                </td>
+                <td style="color:var(--text-muted);font-size:12.5px;white-space:nowrap;">
+                    {{ notif.created_at|date:"M j, H:i" }}
+                </td>
+                <td>
+                    {% if not notif.is_read %}
+                    <form method="post" action="{% url 'notifications:mark-read' notif.pk %}" class="mark-read-form" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-ghost btn-sm" title="Mark as read">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                        </button>
+                    </form>
+                    {% else %}
+                    <span style="color:var(--text-muted);font-size:12px;padding:0 4px;">Read</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:12px;">
+    <span style="font-size:13px;color:var(--text-muted);">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        &nbsp;·&nbsp; {{ page_obj.paginator.count }} notification{{ page_obj.paginator.count|pluralize }}
+    </span>
+    <div style="display:flex;gap:6px;">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.event_type %}&event_type={{ request.GET.event_type }}{% endif %}{% if request.GET.is_read %}&is_read={{ request.GET.is_read }}{% endif %}" class="btn btn-secondary btn-sm">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            Previous
+        </a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.event_type %}&event_type={{ request.GET.event_type }}{% endif %}{% if request.GET.is_read %}&is_read={{ request.GET.is_read }}{% endif %}" class="btn btn-secondary btn-sm">
+            Next
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state" style="padding:80px 20px;">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+    <p>No notifications found</p>
+    {% if request.GET.q or request.GET.event_type or request.GET.is_read %}
+    <a href="{% url 'notifications:list' %}" class="btn btn-secondary btn-sm" style="margin-top:12px;">Clear filters</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<style>
+    .notif-row-unread td { background: var(--blue-soft) !important; }
+    .notif-row-unread:hover td { background: rgba(26,86,219,0.12) !important; }
+    .empty-state {
+        text-align: center;
+        color: var(--text-muted);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+    .empty-state svg { width: 48px; height: 48px; opacity: 0.3; }
+    .empty-state p { font-size: 15px; font-weight: 500; }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // AJAX mark-as-read for each row
+    document.querySelectorAll('.mark-read-form').forEach(form => {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const row = form.closest('tr');
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+            });
+            if (res.ok) {
+                row.classList.remove('notif-row-unread');
+                const dot = row.querySelector('td:first-child span');
+                if (dot) dot.remove();
+                form.parentElement.innerHTML = '<span style="color:var(--text-muted);font-size:12px;padding:0 4px;">Read</span>';
+            }
+        });
+    });
+
+    // AJAX mark-all-read
+    document.getElementById('mark-all-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const res = await fetch(this.action, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': this.querySelector('[name=csrfmiddlewaretoken]').value },
+        });
+        if (res.ok) {
+            document.querySelectorAll('.notif-row-unread').forEach(row => {
+                row.classList.remove('notif-row-unread');
+                const dot = row.querySelector('td:first-child span');
+                if (dot) dot.remove();
+                const btn = row.querySelector('.mark-read-form');
+                if (btn) btn.parentElement.innerHTML = '<span style="color:var(--text-muted);font-size:12px;padding:0 4px;">Read</span>';
+            });
+            document.querySelector('.notif-dot') && document.querySelector('.notif-dot').remove();
+            document.querySelector('.nav-badge') && document.querySelector('.nav-badge').remove();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}New Payment{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h1 class="h4 mb-4">Create Payment Record</h1>
+
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Visit</label>
+            {{ form.visit }}
+            {% if form.visit.errors %}
+              <div class="text-danger small">{{ form.visit.errors }}</div>
+            {% endif %}
+            <div class="form-text">Only visits without an existing payment are shown.</div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Notes <span class="text-muted fw-normal">(optional)</span></label>
+            {{ form.notes }}
+          </div>
+
+          <div class="d-flex gap-2 justify-content-end">
+            <a href="{% url 'payments:list' %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Create Payment</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <p class="text-muted small mt-3">
+      The amount due will be calculated automatically from the visit's services.
+    </p>
+  </div>
+</div>
+{% endblock %}

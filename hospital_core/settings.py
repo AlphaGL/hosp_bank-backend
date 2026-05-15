@@ -11,7 +11,8 @@ SECRET_KEY = os.environ.get(
     'django-insecure-hospital-diagnostic-system-change-in-production-xyz123!'
 )
 
-DEBUG = os.environ.get('DEBUG', 'true').lower() == 'true'
+# DEBUG = os.environ.get('DEBUG', 'true').lower() == 'true'
+DEBUG = True
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
@@ -165,3 +166,10 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ─── AUTH REDIRECTS ───────────────────────────────────────────────────────────
+# Tell LoginRequiredMixin where your actual login page lives.
+# Default is '/accounts/login/' which doesn't exist in this project.
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'   # where to go after a successful login
+LOGOUT_REDIRECT_URL = '/login/'

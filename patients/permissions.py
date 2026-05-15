@@ -1,60 +1,51 @@
-from rest_framework.permissions import BasePermission, SAFE_METHODS
+"""
+Replaces DRF BasePermission classes with Django LoginRequiredMixin + UserPassesTestMixin combos.
+
+Usage in views:
+    class MyView(AdminRequiredMixin, View): ...
+    class MyView(FinanceRequiredMixin, ListView): ...
+
+Each mixin handles both authentication (redirects to login if not logged in)
+and authorisation (returns 403 if the role test fails).
+"""
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 
-class IsAdmin(BasePermission):
-    """Only admin staff (or Django superusers) may access."""
-    def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.is_admin)
+class AdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """Replaces IsAdmin. Only admin staff (or Django superusers) may access."""
+    def test_func(self):
+        return self.request.user.is_admin
 
 
-class IsReceptionist(BasePermission):
-    """Receptionists and admins may access."""
-    def has_permission(self, request, view):
-        return bool(
-            request.user and request.user.is_authenticated and (
-                request.user.is_receptionist or request.user.is_admin
-            )
-        )
+class ReceptionistRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """Replaces IsReceptionist / IsReceptionistOrAdmin."""
+    def test_func(self):
+        u = self.request.user
+        return u.is_receptionist or u.is_admin
 
 
-class IsFinance(BasePermission):
-    """Finance staff and admins may access."""
-    def has_permission(self, request, view):
-        return bool(
-            request.user and request.user.is_authenticated and (
-                request.user.is_finance or request.user.is_admin
-            )
-        )
+class FinanceRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """Replaces IsFinance."""
+    def test_func(self):
+        u = self.request.user
+        return u.is_finance or u.is_admin
 
 
-class IsDoctor(BasePermission):
-    """Doctors/technicians and admins may access."""
-    def has_permission(self, request, view):
-        return bool(
-            request.user and request.user.is_authenticated and (
-                request.user.is_doctor or request.user.is_admin
-            )
-        )
+class DoctorRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """Replaces IsDoctor."""
+    def test_func(self):
+        u = self.request.user
+        return u.is_doctor or u.is_admin
 
 
-class IsReceptionistOrAdmin(BasePermission):
-    """Receptionists or admins may access (alias kept for back-compat)."""
-    def has_permission(self, request, view):
-        return bool(
-            request.user and request.user.is_authenticated and (
-                request.user.is_receptionist or request.user.is_admin
-            )
-        )
-
-
-class IsAdminOrReadOnly(BasePermission):
+class AdminOrReadOnlyMixin(LoginRequiredMixin, UserPassesTestMixin):
     """
-    Allows full access to admins; everyone else gets read-only (GET/HEAD/OPTIONS).
-    Useful for catalogue-style endpoints like DiagnosticService.
+    Replaces IsAdminOrReadOnly.
+    Allows GET/HEAD/OPTIONS for any authenticated user; everything else admin-only.
     """
-    def has_permission(self, request, view):
-        if not request.user or not request.user.is_authenticated:
-            return False
-        if request.method in SAFE_METHODS:
-            return True
-        return request.user.is_admin
+    SAFE_METHODS = ('GET', 'HEAD', 'OPTIONS')
+
+    def test_func(self):
+        if self.request.method in self.SAFE_METHODS:
+            return self.request.user.is_authenticated
+        return self.request.user.is_admin

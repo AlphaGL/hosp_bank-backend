@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Payments{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">Payments</h1>
+  {% if request.user.role == 'finance' or request.user.is_superuser %}
+    <a href="{% url 'payments:create' %}" class="btn btn-primary">+ New Payment</a>
+  {% endif %}
+</div>
+
+{# ── Filter bar ── #}
+<form method="get" class="row g-2 mb-4">
+  <div class="col-auto">{{ filter_form.status }}</div>
+  <div class="col-auto">{{ filter_form.date }}</div>
+  <div class="col-auto">{{ filter_form.patient }}</div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-sm btn-secondary">Filter</button>
+    <a href="{% url 'payments:list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+  </div>
+</form>
+
+{# ── Table ── #}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>Receipt #</th>
+        <th>Patient</th>
+        <th>Amount Due</th>
+        <th>Amount Paid</th>
+        <th>Method</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for payment in payments %}
+      <tr>
+        <td><code>{{ payment.receipt_number }}</code></td>
+        <td>{{ payment.visit.patient.full_name }}</td>
+        <td>{{ payment.amount_due }}</td>
+        <td>{{ payment.amount_paid }}</td>
+        <td>{{ payment.get_payment_method_display|default:"—" }}</td>
+        <td>
+          <span class="badge
+            {% if payment.status == 'paid' %}bg-success
+            {% elif payment.status == 'pending' %}bg-warning text-dark
+            {% elif payment.status == 'failed' %}bg-danger
+            {% else %}bg-secondary{% endif %}">
+            {{ payment.get_status_display }}
+          </span>
+        </td>
+        <td>{{ payment.created_at|date:"d M Y" }}</td>
+        <td>
+          <a href="{% url 'payments:detail' payment.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="text-center text-muted py-4">No payments found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Pagination ── #}
+{% if is_paginated %}
+<nav>
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">Previous</a>
+      </li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}">Next</a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

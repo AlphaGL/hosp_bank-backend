@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Receipt {{ payment.receipt_number }}{% endblock %}
+
+{% block content %}
+<div class="d-print-none d-flex justify-content-between mb-3">
+  <a href="{% url 'payments:detail' payment.pk %}" class="btn btn-sm btn-outline-secondary">← Back</a>
+  <button onclick="window.print()" class="btn btn-sm btn-primary">🖨 Print Receipt</button>
+</div>
+
+<div class="card mx-auto" style="max-width: 560px;">
+  <div class="card-body p-4">
+
+    {# Header #}
+    <div class="text-center mb-4">
+      <h2 class="h5 mb-1">Payment Receipt</h2>
+      <p class="text-muted small mb-0">Generated {{ receipt_generated_at|date:"d M Y H:i" }}</p>
+    </div>
+
+    <hr>
+
+    {# Receipt meta #}
+    <dl class="row small">
+      <dt class="col-5">Receipt No.</dt>
+      <dd class="col-7"><strong><code>{{ payment.receipt_number }}</code></strong></dd>
+
+      <dt class="col-5">Patient</dt>
+      <dd class="col-7">{{ payment.visit.patient.full_name }}</dd>
+
+      <dt class="col-5">Patient ID</dt>
+      <dd class="col-7"><code>{{ payment.visit.patient.patient_id }}</code></dd>
+
+      <dt class="col-5">Payment Method</dt>
+      <dd class="col-7">{{ payment.get_payment_method_display }}</dd>
+
+      {% if payment.transaction_ref %}
+      <dt class="col-5">Transaction Ref</dt>
+      <dd class="col-7"><code>{{ payment.transaction_ref }}</code></dd>
+      {% endif %}
+
+      <dt class="col-5">Paid At</dt>
+      <dd class="col-7">{{ payment.paid_at|date:"d M Y H:i" }}</dd>
+
+      <dt class="col-5">Processed By</dt>
+      <dd class="col-7">{{ payment.processed_by.get_full_name|default:payment.processed_by.username|default:"—" }}</dd>
+    </dl>
+
+    <hr>
+
+    {# Services #}
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th class="text-end">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for vs in services %}
+        <tr>
+          <td>{{ vs.service.name }}</td>
+          <td class="text-end">{{ vs.price_at_booking }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="table-group-divider">
+        <tr>
+          <th>Total Due</th>
+          <th class="text-end">{{ payment.amount_due }}</th>
+        </tr>
+        <tr>
+          <th>Amount Paid</th>
+          <th class="text-end">{{ payment.amount_paid }}</th>
+        </tr>
+        <tr class="{% if payment.balance == 0 %}text-success{% else %}text-danger{% endif %}">
+          <th>Balance</th>
+          <th class="text-end">{{ payment.balance }}</th>
+        </tr>
+      </tfoot>
+    </table>
+
+    {% if payment.notes %}
+    <p class="small text-muted mt-2"><strong>Notes:</strong> {{ payment.notes }}</p>
+    {% endif %}
+
+    <hr>
+    <p class="text-center text-muted small mb-0">Thank you for your payment.</p>
+  </div>
+</div>
+
+<style>
+  @media print {
+    .d-print-none { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+  }
+</style>
+{% endblock %}

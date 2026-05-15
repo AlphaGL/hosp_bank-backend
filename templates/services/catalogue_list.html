@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Service Catalogue — MediCore HMS{% endblock %}
+{% block page_title %}Services{% endblock %}
+{% block nav_services %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Diagnostic Services</h1>
+    <p class="page-subtitle">Browse and manage the hospital service catalogue.</p>
+  </div>
+  <div class="page-header-actions">
+    {% if is_admin %}
+    <a href="{% url 'services:catalogue-create' %}" class="btn btn-primary">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      Add Service
+    </a>
+    {% endif %}
+    <a href="{% url 'services:by-department' %}" class="btn btn-secondary btn-sm">By Department</a>
+  </div>
+</div>
+
+{# ── Filter bar ── #}
+<div class="toolbar">
+  <form method="get" style="display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap;">
+    <div class="search-bar">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+      </svg>
+      <input type="text" name="q" value="{{ filters.q }}"
+             class="form-control form-control-sm"
+             placeholder="Name, code, category…"
+             style="padding-left:34px;">
+    </div>
+    <input type="text" name="dept" value="{{ filters.dept }}"
+           class="form-control form-control-sm" placeholder="Department…"
+           style="max-width:180px;">
+    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+    {% if filters.q or filters.dept %}
+    <a href="{% url 'services:catalogue-list' %}" class="btn btn-ghost btn-sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{# ── Table ── #}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Department</th>
+        <th>Base Price</th>
+        <th>Duration</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for svc in services %}
+      <tr class="clickable-row" data-href="{% url 'services:catalogue-detail' svc.pk %}" style="cursor:pointer;">
+        <td>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;
+                       background:var(--surface-2);padding:2px 7px;border-radius:5px;">
+            {{ svc.code }}
+          </span>
+        </td>
+        <td style="font-weight:600;">{{ svc.name }}</td>
+        <td>
+          <span class="badge cat-{{ svc.category }}">{{ svc.get_category_display }}</span>
+        </td>
+        <td style="color:var(--text-secondary);">{{ svc.department }}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--blue);">
+          ₦{{ svc.base_price }}
+        </td>
+        <td style="color:var(--text-muted);">{{ svc.duration_minutes }} min</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <a href="{% url 'services:catalogue-detail' svc.pk %}" class="btn btn-ghost btn-sm">View</a>
+            {% if is_admin %}
+            <a href="{% url 'services:catalogue-edit' svc.pk %}" class="btn btn-ghost btn-sm">Edit</a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7">
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 3.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2 4.5 3.5 3 2v20l1.5-1.5L6 22l1.5-1.5L9 22l1.5-1.5L12 22l1.5-1.5L15 22l1.5-1.5L18 22l1.5-1.5L21 22V2l-1.5 1.5zM19 19.09H5V4.91h14v14.18zM6 15h12v2H6zm0-4h12v2H6zm0-4h12v2H6z"/></svg>
+            </div>
+            <p>No services found{% if filters.q or filters.dept %} matching your filters{% endif %}.</p>
+            {% if is_admin %}
+            <a href="{% url 'services:catalogue-create' %}" class="btn btn-primary btn-sm">Add First Service</a>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if is_paginated %}
+  <div class="pagination-row">
+    <span class="pagination-info">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      &nbsp;·&nbsp; {{ page_obj.paginator.count }} total
+    </span>
+    <div style="display:flex;gap:8px;">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if filters.q %}&q={{ filters.q }}{% endif %}{% if filters.dept %}&dept={{ filters.dept }}{% endif %}"
+         class="btn btn-ghost btn-sm">← Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if filters.q %}&q={{ filters.q }}{% endif %}{% if filters.dept %}&dept={{ filters.dept }}{% endif %}"
+         class="btn btn-ghost btn-sm">Next →</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.search-bar{position:relative;flex:1;max-width:320px;}
+.search-bar input{padding-left:36px;}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;fill:var(--text-light);pointer-events:none;}
+.pagination-row{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border-light);}
+.pagination-info{font-size:12.5px;color:var(--text-muted);}
+.empty-state{display:flex;flex-direction:column;align-items:center;gap:12px;padding:48px 20px;}
+.empty-icon{width:52px;height:52px;background:var(--surface-2);border-radius:50%;display:grid;place-items:center;}
+.empty-icon svg{width:26px;height:26px;fill:var(--text-light);}
+.empty-state p{font-size:14px;color:var(--text-muted);}
+.cat-imaging{background:rgba(26,86,219,.12);color:var(--blue);}
+.cat-lab{background:rgba(5,150,105,.12);color:#065f46;}
+.cat-other{background:var(--surface-2);color:var(--text-muted);}
+</style>
+
+<script>
+document.querySelectorAll('.clickable-row').forEach(r => {
+  r.addEventListener('click', function(e){
+    if(!e.target.closest('a')&&!e.target.closest('button')) window.location=this.dataset.href;
+  });
+});
+</script>
+{% endblock %}

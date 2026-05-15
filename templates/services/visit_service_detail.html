@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}{{ vs.service.name }} — Visit #{{ vs.visit.pk }}{% endblock %}
+{% block nav_services %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ vs.service.name }}</h1>
+    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;
+                   background:var(--surface-2);padding:3px 9px;border-radius:6px;color:var(--text-secondary);">
+        Visit #{{ vs.visit.pk }}
+      </span>
+      <span class="badge
+        {% if vs.status == 'completed' %}badge-completed
+        {% elif vs.status == 'in_progress' %}badge-in-progress
+        {% elif vs.status == 'cancelled' %}badge-cancelled
+        {% else %}badge-pending{% endif %}">
+        {{ vs.get_status_display }}
+      </span>
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'services:visit-service-list' %}" class="btn btn-ghost btn-sm">← Back</a>
+    <a href="{% url 'services:visit-service-edit' vs.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+  </div>
+</div>
+
+{% if messages %}
+  {% for m in messages %}
+  <div class="alert alert-{{ m.tags }} alert-dismissible fade show" role="alert">
+    {{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+{% endif %}
+
+<div class="detail-grid">
+
+  {# ── Service info ── #}
+  <div class="card">
+    <div class="card-header"><span class="card-title">Service Details</span></div>
+    <div class="card-body">
+      <dl class="info-list">
+        <div class="info-row">
+          <dt>Patient</dt>
+          <dd style="font-weight:600;">{{ vs.visit.patient.full_name }}</dd>
+        </div>
+        <div class="info-row">
+          <dt>Patient ID</dt>
+          <dd><code>{{ vs.visit.patient.patient_id }}</code></dd>
+        </div>
+        <div class="info-row">
+          <dt>Visit</dt>
+          <dd>#{{ vs.visit.pk }} &mdash; {{ vs.visit.visit_date }}</dd>
+        </div>
+        <div class="info-row">
+          <dt>Service</dt>
+          <dd>
+            <a href="{% url 'services:catalogue-detail' vs.service.pk %}"
+               style="color:var(--blue);font-weight:600;text-decoration:none;">
+              {{ vs.service.name }}
+            </a>
+          </dd>
+        </div>
+        <div class="info-row">
+          <dt>Code</dt>
+          <dd>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;
+                         background:var(--surface-2);padding:2px 7px;border-radius:5px;">
+              {{ vs.service.code }}
+            </span>
+          </dd>
+        </div>
+        <div class="info-row">
+          <dt>Department</dt>
+          <dd>{{ vs.service.department }}</dd>
+        </div>
+        <div class="info-row">
+          <dt>Price</dt>
+          <dd style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--blue);">
+            ₦{{ vs.price_at_booking }}
+          </dd>
+        </div>
+        {% if vs.notes %}
+        <div class="info-row">
+          <dt>Notes</dt>
+          <dd style="white-space:pre-line;">{{ vs.notes }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+
+  {# ── Status & timing ── #}
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Progress</span></div>
+      <div class="card-body">
+        <dl class="info-list">
+          <div class="info-row">
+            <dt>Status</dt>
+            <dd>
+              <span class="badge
+                {% if vs.status == 'completed' %}badge-completed
+                {% elif vs.status == 'in_progress' %}badge-in-progress
+                {% elif vs.status == 'cancelled' %}badge-cancelled
+                {% else %}badge-pending{% endif %}">
+                {{ vs.get_status_display }}
+              </span>
+            </dd>
+          </div>
+          <div class="info-row">
+            <dt>Attended By</dt>
+            <dd>{{ vs.attended_by.get_full_name }}</dd>
+          </div>
+          <div class="info-row">
+            <dt>Requested</dt>
+            <dd>{{ vs.created_at|date:"d M Y H:i" }}</dd>
+          </div>
+          {% if vs.started_at %}
+          <div class="info-row">
+            <dt>Started</dt>
+            <dd>{{ vs.started_at|date:"d M Y H:i" }}</dd>
+          </div>
+          {% endif %}
+          {% if vs.completed_at %}
+          <div class="info-row">
+            <dt>Completed</dt>
+            <dd>{{ vs.completed_at|date:"d M Y H:i" }}</dd>
+          </div>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+
+    {# ── Quick status update ── #}
+    {% if vs.status != 'completed' and vs.status != 'cancelled' %}
+    <div class="card border-action">
+      <div class="card-header"><span class="card-title">Update Status</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+        <form method="post" action="{% url 'services:update-status' vs.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            {% if vs.status == 'pending' %}
+              <button name="status" value="in_progress" type="submit"
+                      class="btn btn-primary btn-sm">▶ Start</button>
+              <button name="status" value="cancelled" type="submit"
+                      class="btn btn-ghost btn-sm" style="color:var(--danger);">✕ Cancel</button>
+            {% elif vs.status == 'in_progress' %}
+              <button name="status" value="completed" type="submit"
+                      class="btn btn-primary btn-sm">✓ Mark Complete</button>
+              <button name="status" value="cancelled" type="submit"
+                      class="btn btn-ghost btn-sm" style="color:var(--danger);">✕ Cancel</button>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ── Report ── #}
+    <div class="card">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="card-title">Report</span>
+      </div>
+      <div class="card-body">
+        {% if vs.report_url %}
+          <a href="{{ vs.report_url }}" target="_blank" rel="noopener"
+             class="btn btn-ghost" style="justify-content:flex-start;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;">
+              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15h8v2H8zm0-3h8v2H8zm0-3h5v2H8z"/>
+            </svg>
+            View Report
+          </a>
+          <form method="post" action="{% url 'services:upload-report' vs.pk %}"
+                enctype="multipart/form-data" style="margin-top:10px;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <input type="file" name="report" class="form-control form-control-sm" style="max-width:260px;">
+              <button type="submit" class="btn btn-secondary btn-sm">Replace</button>
+            </div>
+          </form>
+        {% else %}
+          <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">No report uploaded yet.</p>
+          <form method="post" action="{% url 'services:upload-report' vs.pk %}"
+                enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <input type="file" name="report" class="form-control form-control-sm" style="max-width:260px;">
+              <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+            </div>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+.detail-grid { display:grid;grid-template-columns:1.2fr 1fr;gap:16px; }
+@media(max-width:700px){ .detail-grid { grid-template-columns:1fr; } }
+.info-list  { display:flex;flex-direction:column; }
+.info-row   { display:flex;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--border-light);gap:12px; }
+.info-row:last-child { border-bottom:none; }
+.info-row dt{ width:100px;flex-shrink:0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted); }
+.info-row dd{ color:var(--text-primary);font-size:13.5px; }
+.border-action { border-color:var(--blue) !important; }
+.badge-pending     { background:rgba(234,179,8,.15);  color:#854d0e; }
+.badge-in-progress { background:rgba(59,130,246,.15); color:var(--blue); }
+.badge-completed   { background:rgba(5,150,105,.15);  color:#065f46; }
+.badge-cancelled   { background:rgba(239,68,68,.12);  color:#b91c1c; }
+</style>
+{% endblock %}

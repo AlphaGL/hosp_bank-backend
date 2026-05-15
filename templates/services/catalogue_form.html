@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title }} — MediCore HMS{% endblock %}
+{% block nav_services %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ form_title }}</h1>
+    <p class="page-subtitle">
+      {% if object %}Update this service's details and pricing.
+      {% else %}Add a new billable diagnostic service to the catalogue.{% endif %}
+    </p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% if object %}{% url 'services:catalogue-detail' object.pk %}{% else %}{% url 'services:catalogue-list' %}{% endif %}"
+       class="btn btn-ghost btn-sm">← Cancel</a>
+  </div>
+</div>
+
+<div class="form-card">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Service Information</span></div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger" style="border-radius:8px;font-size:13px;">
+          {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div class="form-section-title">Identity</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Service Name</label>
+            <input type="text" name="name" value="{{ form.name.value|default:'' }}"
+                   class="form-control {% if form.name.errors %}is-invalid{% endif %}"
+                   placeholder="e.g. Chest X-Ray">
+            {% if form.name.errors %}<div class="field-error">{{ form.name.errors }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label>Service Code</label>
+            <input type="text" name="code" value="{{ form.code.value|default:'' }}"
+                   class="form-control {% if form.code.errors %}is-invalid{% endif %}"
+                   placeholder="e.g. IMG-001"
+                   style="font-family:'JetBrains Mono',monospace;">
+            {% if form.code.errors %}<div class="field-error">{{ form.code.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="form-section-title">Classification</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            {{ form.category }}
+            {% if form.category.errors %}<div class="field-error">{{ form.category.errors }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label>Department</label>
+            <input type="text" name="department" value="{{ form.department.value|default:'' }}"
+                   class="form-control" placeholder="e.g. Radiology">
+            {% if form.department.errors %}<div class="field-error">{{ form.department.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <div class="form-section-title">Pricing & Duration</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Base Price (₦)</label>
+            <input type="number" name="base_price" value="{{ form.base_price.value|default:'' }}"
+                   class="form-control" step="0.01" min="0"
+                   style="font-family:'JetBrains Mono',monospace;">
+            {% if form.base_price.errors %}<div class="field-error">{{ form.base_price.errors }}</div>{% endif %}
+          </div>
+          <div class="form-group">
+            <label>Duration (minutes)</label>
+            <input type="number" name="duration_minutes" value="{{ form.duration_minutes.value|default:30 }}"
+                   class="form-control" min="1">
+          </div>
+        </div>
+
+        <div class="form-section-title">Description <span class="optional-label">Optional</span></div>
+        <div class="form-group">
+          <label>Description</label>
+          {{ form.description }}
+        </div>
+
+        <div class="form-section-title">Status</div>
+        <div class="form-check" style="padding:12px 0;">
+          {{ form.is_active }}
+          <label class="form-check-label" style="margin-left:8px;font-size:14px;">
+            Active — available when adding services to visits
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <a href="{% if object %}{% url 'services:catalogue-detail' object.pk %}{% else %}{% url 'services:catalogue-list' %}{% endif %}"
+             class="btn btn-ghost">Cancel</a>
+          <button type="submit" class="btn btn-primary">
+            {% if object %}
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+            Save Changes
+            {% else %}
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            Add Service
+            {% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.form-card{max-width:700px;}
+.form-section-title{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:var(--text-muted);margin:20px 0 12px;display:flex;align-items:center;gap:8px;
+}
+.form-section-title::after{content:'';flex:1;height:1px;background:var(--border-light);}
+.optional-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-light);}
+.field-error{font-size:12px;color:var(--danger);margin-top:5px;}
+.form-actions{
+  display:flex;justify-content:flex-end;gap:10px;
+  padding-top:20px;margin-top:8px;border-top:1px solid var(--border-light);
+}
+</style>
+{% endblock %}

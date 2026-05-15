@@ -1,39 +1,77 @@
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.views import View
+from django.views.generic import ListView
+
 from .models import Notification
-from .serializers import NotificationSerializer
 
 
-class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = NotificationSerializer
-    permission_classes = [IsAuthenticated]
+class NotificationListView(LoginRequiredMixin, ListView):
+    """GET /notifications/ — list all notifications for the current user's role."""
+    template_name = 'notifications/notification_list.html'
+    context_object_name = 'notifications'
+    paginate_by = 20
 
     def get_queryset(self):
-        user = self.request.user
-        role = user.role
-        # Return notifications meant for this user's role or all
+        role = self.request.user.role
         return Notification.objects.filter(
             target_role__in=[role, 'all']
         ).order_by('-created_at')
 
-    @action(detail=False, methods=['get'], url_path='unread')
-    def unread(self, request):
-        qs = self.get_queryset().filter(is_read=False)
-        return Response({
+
+class NotificationDetailView(LoginRequiredMixin, View):
+    """GET /notifications/<pk>/ — detail view for a single notification."""
+    template_name = 'notifications/notification_detail.html'
+
+    def get(self, request, pk):
+        role = request.user.role
+        notification = get_object_or_404(
+            Notification,
+            pk=pk,
+            target_role__in=[role, 'all'],
+        )
+        return render(request, self.template_name, {'notification': notification})
+
+
+class UnreadNotificationsView(LoginRequiredMixin, View):
+    """GET /notifications/unread/ — unread notifications for the current user's role."""
+    template_name = 'notifications/unread_list.html'
+
+    def get(self, request):
+        role = request.user.role
+        qs = Notification.objects.filter(
+            target_role__in=[role, 'all'],
+            is_read=False,
+        ).order_by('-created_at')
+        return render(request, self.template_name, {
+            'notifications': qs[:20],
             'count': qs.count(),
-            'notifications': NotificationSerializer(qs[:20], many=True).data,
         })
 
-    @action(detail=True, methods=['patch'], url_path='mark-read')
-    def mark_read(self, request, pk=None):
-        notification = self.get_object()
+
+class MarkNotificationReadView(LoginRequiredMixin, View):
+    """POST /notifications/<pk>/mark-read/ — mark a single notification as read."""
+
+    def post(self, request, pk):
+        role = request.user.role
+        notification = get_object_or_404(
+            Notification,
+            pk=pk,
+            target_role__in=[role, 'all'],
+        )
         notification.is_read = True
         notification.save(update_fields=['is_read'])
-        return Response({'message': 'Marked as read.'})
+        return JsonResponse({'message': 'Marked as read.'})
 
-    @action(detail=False, methods=['post'], url_path='mark-all-read')
-    def mark_all_read(self, request):
-        self.get_queryset().filter(is_read=False).update(is_read=True)
-        return Response({'message': 'All notifications marked as read.'})
+
+class MarkAllReadView(LoginRequiredMixin, View):
+    """POST /notifications/mark-all-read/ — mark every visible notification as read."""
+
+    def post(self, request):
+        role = request.user.role
+        Notification.objects.filter(
+            target_role__in=[role, 'all'],
+            is_read=False,
+        ).update(is_read=True)
+        return JsonResponse({'message': 'All notifications marked as read.'})

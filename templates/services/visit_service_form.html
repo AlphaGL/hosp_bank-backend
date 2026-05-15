@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}{{ form_title|default:"Add Visit Service" }} — MediCore HMS{% endblock %}
+{% block nav_services %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ form_title|default:"Add Visit Service" }}</h1>
+    <p class="page-subtitle">
+      {% if object %}Update the details for this service request.
+      {% else %}Attach a diagnostic service to a patient visit.{% endif %}
+    </p>
+  </div>
+  <div class="page-header-actions">
+    {% if object %}
+      <a href="{% url 'services:visit-service-detail' object.pk %}" class="btn btn-ghost btn-sm">← Cancel</a>
+    {% else %}
+      <a href="{% url 'services:visit-service-list' %}" class="btn btn-ghost btn-sm">← Cancel</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="form-card">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Service Details</span></div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger" style="border-radius:8px;font-size:13px;">
+          {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        {% if object %}
+          {# ── Edit mode: VisitServiceUpdateForm ── #}
+          <div class="form-section-title">Status</div>
+          <div class="form-group">
+            <label>Service Status</label>
+            {{ form.status }}
+            {% if form.status.errors %}<div class="field-error">{{ form.status.errors }}</div>{% endif %}
+          </div>
+
+          <div class="form-section-title">Assignment</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Attended By <span class="optional-label">Optional</span></label>
+              {{ form.attended_by }}
+              {% if form.attended_by.errors %}<div class="field-error">{{ form.attended_by.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-section-title">Timing <span class="optional-label">Optional</span></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Started At</label>
+              {{ form.started_at }}
+              {% if form.started_at.errors %}<div class="field-error">{{ form.started_at.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+              <label>Completed At</label>
+              {{ form.completed_at }}
+              {% if form.completed_at.errors %}<div class="field-error">{{ form.completed_at.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div class="form-section-title">Report <span class="optional-label">Optional</span></div>
+          <div class="form-group">
+            <label>Upload Report</label>
+            {{ form.report }}
+            {% if form.report.errors %}<div class="field-error">{{ form.report.errors }}</div>{% endif %}
+            <div class="form-text" style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+              Accepted: PDF, images, DICOM. Stored securely in Cloudinary.
+            </div>
+          </div>
+
+          <div class="form-section-title">Notes <span class="optional-label">Optional</span></div>
+          <div class="form-group">
+            <label>Notes</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}<div class="field-error">{{ form.notes.errors }}</div>{% endif %}
+          </div>
+
+        {% else %}
+          {# ── Create mode: VisitServiceForm ── #}
+          <div class="form-section-title">Visit</div>
+          <div class="form-group">
+            <label>Patient Visit</label>
+            {{ form.visit }}
+            {% if form.visit.errors %}<div class="field-error">{{ form.visit.errors }}</div>{% endif %}
+          </div>
+
+          <div class="form-section-title">Service</div>
+          <div class="form-group">
+            <label>Diagnostic Service</label>
+            {{ form.service }}
+            {% if form.service.errors %}<div class="field-error">{{ form.service.errors }}</div>{% endif %}
+            <div class="form-text" style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+              The price will be set automatically from the service catalogue.
+            </div>
+          </div>
+
+          <div class="form-section-title">Notes <span class="optional-label">Optional</span></div>
+          <div class="form-group">
+            <label>Notes</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}<div class="field-error">{{ form.notes.errors }}</div>{% endif %}
+          </div>
+        {% endif %}
+
+        <div class="form-actions">
+          {% if object %}
+            <a href="{% url 'services:visit-service-detail' object.pk %}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+              Save Changes
+            </button>
+          {% else %}
+            <a href="{% url 'services:visit-service-list' %}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              Add Service
+            </button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.form-card { max-width: 680px; }
+.form-section-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-muted); margin: 20px 0 12px; display: flex; align-items: center; gap: 8px;
+}
+.form-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border-light); }
+.optional-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-light); }
+.field-error { font-size: 12px; color: var(--danger); margin-top: 5px; }
+.form-actions {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding-top: 20px; margin-top: 8px; border-top: 1px solid var(--border-light);
+}
+</style>
+{% endblock %}

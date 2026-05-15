@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load queue_extras %}
+{% block title %}Queue Summary — {{ today }}{% endblock %}
+
+{% block content %}
+<div class="queue-header">
+  <h1>Queue Summary <span class="date-badge">{{ today }}</span></h1>
+  <a href="{% url 'queue:live' %}" class="btn btn-primary">Live View</a>
+  <a href="{% url 'queue:list' %}" class="btn btn-secondary">Full List</a>
+</div>
+
+{% if summary %}
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th>Department</th>
+        {% for s in statuses %}<th>{{ s|title }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for dept, counts in summary.items %}
+        <tr>
+          <td><strong>{{ dept }}</strong></td>
+          {% for s in statuses %}
+            <td>{{ counts|get_item:s }}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="empty-state">No queue activity today.</p>
+{% endif %}
+{% endblock %}

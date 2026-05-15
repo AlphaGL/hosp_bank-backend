@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Notification — MediCore HMS{% endblock %}
+{% block page_title %}Notification Detail{% endblock %}
+{% block nav_notifications %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{% url 'notifications:list' %}" style="display:inline-flex;align-items:center;gap:6px;color:var(--text-muted);text-decoration:none;font-size:13px;font-weight:500;margin-bottom:8px;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px;"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            Back to Notifications
+        </a>
+        <h1 class="page-title">Notification Detail</h1>
+    </div>
+    <div class="page-header-actions">
+        {% if not notification.is_read %}
+        <form method="post" action="{% url 'notifications:mark-read' notification.pk %}" id="mark-read-form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-sm">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                Mark as read
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start;">
+
+    <!-- Main card -->
+    <div class="card">
+        <div class="card-header">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <!-- Event icon -->
+                <div class="stat-icon" style="
+                    margin:0;
+                    {% if notification.event_type == 'payment_confirmed' %}
+                        background:var(--success-light);color:var(--success);
+                    {% elif notification.event_type == 'patient_queued' %}
+                        background:var(--warn-light);color:var(--warn);
+                    {% elif notification.event_type == 'diagnosis_completed' %}
+                        background:var(--teal-light);color:var(--teal);
+                    {% else %}
+                        background:var(--blue-light);color:var(--blue);
+                    {% endif %}
+                ">
+                    {% if notification.event_type == 'payment_confirmed' %}
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+                    {% elif notification.event_type == 'patient_queued' %}
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+                    {% elif notification.event_type == 'diagnosis_completed' %}
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                    {% else %}
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                    {% endif %}
+                </div>
+                <div>
+                    <span class="card-title">{{ notification.get_event_type_display }}</span>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">{{ notification.created_at|date:"l, F j, Y \a\t H:i" }}</div>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                {% if notification.is_read %}
+                    <span class="badge badge-success">Read</span>
+                {% else %}
+                    <span class="badge badge-warn">Unread</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <p style="font-size:15px;line-height:1.7;color:var(--text-primary);">{{ notification.message }}</p>
+        </div>
+    </div>
+
+    <!-- Sidebar meta -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- Metadata card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Details</span>
+            </div>
+            <div class="card-body" style="padding:0;">
+                <dl style="margin:0;">
+                    <div class="detail-row">
+                        <dt>Event Type</dt>
+                        <dd>
+                            {% if notification.event_type == 'payment_confirmed' %}
+                                <span class="badge badge-success">Payment Confirmed</span>
+                            {% elif notification.event_type == 'patient_queued' %}
+                                <span class="badge badge-warn">Patient Queued</span>
+                            {% elif notification.event_type == 'diagnosis_completed' %}
+                                <span class="badge badge-info">Diagnosis Completed</span>
+                            {% else %}
+                                <span class="badge badge-registered">General</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="detail-row">
+                        <dt>Target Role</dt>
+                        <dd style="text-transform:capitalize;">{{ notification.get_target_role_display }}</dd>
+                    </div>
+                    <div class="detail-row">
+                        <dt>Status</dt>
+                        <dd>
+                            {% if notification.is_read %}
+                                <span style="color:var(--success);font-weight:600;">✓ Read</span>
+                            {% else %}
+                                <span style="color:var(--warn);font-weight:600;">● Unread</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    <div class="detail-row">
+                        <dt>Created</dt>
+                        <dd style="color:var(--text-muted);">{{ notification.created_at|date:"M j, Y, H:i" }}</dd>
+                    </div>
+                    <div class="detail-row" style="border:none;">
+                        <dt>ID</dt>
+                        <dd style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);">#{{ notification.pk }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Visit/patient card -->
+        {% if notification.visit %}
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Linked Visit</span>
+            </div>
+            <div class="card-body">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                    <div class="staff-avatar" style="width:40px;height:40px;font-size:14px;">
+                        {{ notification.visit.patient.full_name|first|upper }}
+                    </div>
+                    <div>
+                        <div style="font-weight:600;font-size:14px;">{{ notification.visit.patient.full_name }}</div>
+                        <div style="font-size:12px;color:var(--text-muted);">Patient</div>
+                    </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <div style="display:flex;justify-content:space-between;font-size:13px;">
+                        <span style="color:var(--text-muted);">Visit #</span>
+                        <span style="font-weight:500;font-family:'JetBrains Mono',monospace;">{{ notification.visit.pk }}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:13px;">
+                        <span style="color:var(--text-muted);">Date</span>
+                        <span style="font-weight:500;">{{ notification.visit.created_at|date:"M j, Y" }}</span>
+                    </div>
+                    {% if notification.visit.status %}
+                    <div style="display:flex;justify-content:space-between;font-size:13px;align-items:center;">
+                        <span style="color:var(--text-muted);">Status</span>
+                        <span class="badge badge-{{ notification.visit.status }}">{{ notification.visit.get_status_display }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <a href="{% url 'patients:visit-detail' notification.visit.pk %}" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;margin-top:14px;">
+                    View Visit
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 22px;
+        border-bottom: 1px solid var(--border-light);
+        gap: 12px;
+    }
+    .detail-row dt {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-muted);
+        display: block;
+        margin: 0;
+    }
+    .detail-row dd {
+        font-size: 13.5px;
+        color: var(--text-primary);
+        margin: 0;
+        text-align: right;
+    }
+
+    @media (max-width: 860px) {
+        div[style*="grid-template-columns:1fr 320px"] {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const form = document.getElementById('mark-read-form');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+            });
+            if (res.ok) {
+                form.querySelector('button').remove();
+                // Update status badge inline
+                const statusDD = document.querySelector('.detail-row dd span[style*="warn"]');
+                if (statusDD) {
+                    statusDD.style.color = 'var(--success)';
+                    statusDD.textContent = '✓ Read';
+                }
+                const headerBadge = document.querySelector('.card-header .badge-warn');
+                if (headerBadge) {
+                    headerBadge.className = 'badge badge-success';
+                    headerBadge.textContent = 'Read';
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

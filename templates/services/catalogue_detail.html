@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}{{ service.name }} — MediCore HMS{% endblock %}
+{% block nav_services %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">{{ service.name }}</h1>
+    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
+      <span class="svc-code">{{ service.code }}</span>
+      <span class="badge cat-{{ service.category }}">{{ service.get_category_display }}</span>
+      {% if service.is_active %}
+        <span class="badge badge-completed">Active</span>
+      {% else %}
+        <span class="badge badge-cancelled">Inactive</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'services:catalogue-list' %}" class="btn btn-ghost btn-sm">← Catalogue</a>
+    {% if request.user.is_admin or request.user.is_superuser %}
+    <a href="{% url 'services:catalogue-edit' service.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if messages %}
+  {% for m in messages %}
+  <div class="alert alert-{{ m.tags }} alert-dismissible fade show">
+    {{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+{% endif %}
+
+<div class="detail-grid">
+
+  {# Service info #}
+  <div class="card">
+    <div class="card-header"><span class="card-title">Service Details</span></div>
+    <div class="card-body">
+      <dl class="info-list">
+        <div class="info-row">
+          <dt>Code</dt>
+          <dd><span class="svc-code">{{ service.code }}</span></dd>
+        </div>
+        <div class="info-row">
+          <dt>Category</dt>
+          <dd>{{ service.get_category_display }}</dd>
+        </div>
+        <div class="info-row">
+          <dt>Department</dt>
+          <dd>{{ service.department }}</dd>
+        </div>
+        <div class="info-row">
+          <dt>Base Price</dt>
+          <dd style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--blue);">
+            ₦{{ service.base_price }}
+          </dd>
+        </div>
+        <div class="info-row">
+          <dt>Duration</dt>
+          <dd>{{ service.duration_minutes }} minutes</dd>
+        </div>
+        <div class="info-row">
+          <dt>Status</dt>
+          <dd>
+            {% if service.is_active %}
+              <span class="badge badge-completed">Active</span>
+            {% else %}
+              <span class="badge badge-cancelled">Inactive</span>
+            {% endif %}
+          </dd>
+        </div>
+        {% if service.description %}
+        <div class="info-row">
+          <dt>Description</dt>
+          <dd style="white-space:pre-line;">{{ service.description }}</dd>
+        </div>
+        {% endif %}
+        <div class="info-row">
+          <dt>Added</dt>
+          <dd>{{ service.created_at|date:"d M Y" }}</dd>
+        </div>
+      </dl>
+    </div>
+  </div>
+
+  {# Quick stats + actions #}
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Usage Stats</span></div>
+      <div class="card-body">
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-value">{{ service.visit_services.count }}</div>
+            <div class="stat-label">Total Requests</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-value">
+              {{ service.visit_services.filter.count }}
+            </div>
+            <div class="stat-label">Pending</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Actions</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+        <a href="{% url 'services:visit-service-list' %}?department={{ service.department }}"
+           class="btn btn-ghost" style="justify-content:flex-start;">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;margin-right:8px;"><path d="M9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4zm2.5 2.1h-15V5h15v14.1zm0-16.1h-15c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h15c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+          View All Requests for This Service
+        </a>
+        <a href="{% url 'services:visit-service-create' %}?service={{ service.pk }}"
+           class="btn btn-primary" style="justify-content:flex-start;">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;margin-right:8px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          Add to a Visit
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.svc-code{
+  display:inline-block;background:var(--surface-2);color:var(--text-secondary);
+  padding:3px 9px;border-radius:6px;font-size:12px;font-weight:700;
+  font-family:'JetBrains Mono',monospace;letter-spacing:.5px;
+}
+.detail-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;}
+@media(max-width:700px){.detail-grid{grid-template-columns:1fr;}}
+.info-list{display:flex;flex-direction:column;}
+.info-row{display:flex;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--border-light);gap:12px;}
+.info-row:last-child{border-bottom:none;}
+.info-row dt{width:110px;flex-shrink:0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
+.info-row dd{color:var(--text-primary);font-size:13.5px;}
+.stats-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.stat-box{background:var(--surface-2);border-radius:10px;padding:16px;text-align:center;}
+.stat-value{font-size:22px;font-weight:800;color:var(--blue);}
+.stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-top:4px;}
+.cat-imaging{background:rgba(26,86,219,.12);color:var(--blue);}
+.cat-lab{background:rgba(5,150,105,.12);color:#065f46;}
+.cat-other{background:var(--surface-2);color:var(--text-muted);}
+</style>
+{% endblock %}

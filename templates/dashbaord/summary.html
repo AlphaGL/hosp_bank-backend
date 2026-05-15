@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h4 mb-0">Dashboard</h1>
+  <span class="text-muted small">{{ today|date:"l, d F Y" }}</span>
+</div>
+
+{# ── Top stat cards ── #}
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-md-3">
+    <div class="card text-center h-100">
+      <div class="card-body py-3">
+        <div class="fs-2 fw-bold text-primary">{{ total_patients }}</div>
+        <div class="text-muted small">Total Patients</div>
+        <div class="text-success small mt-1">+{{ patients_today }} today</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card text-center h-100">
+      <div class="card-body py-3">
+        <div class="fs-2 fw-bold text-info">{{ total_visits_today }}</div>
+        <div class="text-muted small">Visits Today</div>
+        {% if emergency_today %}
+          <div class="text-danger small mt-1">⚠ {{ emergency_today }} emergency</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card text-center h-100">
+      <div class="card-body py-3">
+        <div class="fs-2 fw-bold text-success">{{ revenue_today|floatformat:2 }}</div>
+        <div class="text-muted small">Revenue Today</div>
+        <div class="text-muted small mt-1">{{ revenue_this_month|floatformat:2 }} this month</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card text-center h-100">
+      <div class="card-body py-3">
+        <div class="fs-2 fw-bold text-warning">{{ pending_payments }}</div>
+        <div class="text-muted small">Pending Payments</div>
+        <div class="text-muted small mt-1">{{ pending_amount|floatformat:2 }} outstanding</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="row g-4 mb-4">
+
+  {# ── Visit breakdown ── #}
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Today's Visits</div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span>In Queue</span>
+            <span class="badge bg-warning text-dark rounded-pill">{{ in_queue_today }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span>In Progress</span>
+            <span class="badge bg-primary rounded-pill">{{ in_progress_today }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span>Completed</span>
+            <span class="badge bg-success rounded-pill">{{ completed_today }}</span>
+          </li>
+          <li class="list-group-item d-flex justify-content-between px-0">
+            <span>Emergency</span>
+            <span class="badge bg-danger rounded-pill">{{ emergency_today }}</span>
+          </li>
+        </ul>
+        <a href="{% url 'patients:visit-list' %}" class="btn btn-sm btn-outline-primary w-100 mt-3">View All Visits</a>
+      </div>
+    </div>
+  </div>
+
+  {# ── Queue by department ── #}
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+        Queue by Department
+        <a href="{% url 'department-workload' %}" class="btn btn-sm btn-outline-secondary">Detail</a>
+      </div>
+      <div class="card-body p-0">
+        {% if queue_summary %}
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr><th>Department</th><th>Status</th><th class="text-end">Count</th></tr>
+          </thead>
+          <tbody>
+            {% for row in queue_summary %}
+            <tr>
+              <td>{{ row.department }}</td>
+              <td>
+                <span class="badge
+                  {% if row.status == 'waiting' %}bg-warning text-dark
+                  {% elif row.status == 'in_progress' %}bg-primary
+                  {% elif row.status == 'completed' %}bg-success
+                  {% else %}bg-secondary{% endif %}">
+                  {{ row.status|title }}
+                </span>
+              </td>
+              <td class="text-end">{{ row.count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+          <p class="text-muted text-center py-4 mb-0">No queue data for today.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{# ── 7-day trend table ── #}
+<div class="card">
+  <div class="card-header fw-semibold">7-Day Trend</div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Date</th>
+          <th class="text-end">Visits</th>
+          <th class="text-end">Revenue</th>
+          <th style="width:40%">Visits</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in weekly_trend %}
+        {% with max_visits=total_visits_today|default:1 %}
+        <tr>
+          <td class="text-nowrap">{{ row.date }}</td>
+          <td class="text-end">{{ row.visits }}</td>
+          <td class="text-end">{{ row.revenue|floatformat:0 }}</td>
+          <td>
+            <div class="progress" style="height:8px">
+              <div class="progress-bar bg-primary"
+                   style="width:{% widthratio row.visits max_visits 100 %}%"></div>
+            </div>
+          </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

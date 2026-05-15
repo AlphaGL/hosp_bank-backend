@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Visit Services — MediCore HMS{% endblock %}
+{% block nav_services %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Visit Services</h1>
+    <p class="page-subtitle">Track diagnostic service requests across all visits.</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{% url 'services:visit-service-create' %}" class="btn btn-primary">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      Add Service
+    </a>
+  </div>
+</div>
+
+{# ── Filter bar ── #}
+<div class="toolbar">
+  <form method="get" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <input type="text" name="visit" value="{{ filters.visit }}"
+           class="form-control form-control-sm" placeholder="Visit ID…"
+           style="max-width:120px;">
+    <input type="text" name="department" value="{{ filters.department }}"
+           class="form-control form-control-sm" placeholder="Department…"
+           style="max-width:180px;">
+    <select name="status" class="form-select form-select-sm" style="max-width:160px;">
+      <option value="">All Statuses</option>
+      {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    {% if filters.visit or filters.department or filters.status %}
+      <a href="{% url 'services:visit-service-list' %}" class="btn btn-ghost btn-sm">Clear</a>
+    {% endif %}
+  </form>
+</div>
+
+{# ── Table ── #}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Visit</th>
+        <th>Patient</th>
+        <th>Service</th>
+        <th>Department</th>
+        <th>Price</th>
+        <th>Status</th>
+        <th>Requested</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for vs in visit_services %}
+      <tr class="clickable-row" data-href="{% url 'services:visit-service-detail' vs.pk %}" style="cursor:pointer;">
+        <td>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:12px;
+                       background:var(--surface-2);padding:2px 7px;border-radius:5px;">
+            #{{ vs.visit.pk }}
+          </span>
+        </td>
+        <td style="font-weight:600;">{{ vs.visit.patient.full_name }}</td>
+        <td>{{ vs.service.name }}</td>
+        <td style="color:var(--text-secondary);">{{ vs.service.department }}</td>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--blue);">
+          ₦{{ vs.price_at_booking }}
+        </td>
+        <td>
+          <span class="badge
+            {% if vs.status == 'completed' %}badge-completed
+            {% elif vs.status == 'in_progress' %}badge-in-progress
+            {% elif vs.status == 'cancelled' %}badge-cancelled
+            {% else %}badge-pending{% endif %}">
+            {{ vs.get_status_display }}
+          </span>
+        </td>
+        <td style="color:var(--text-muted);font-size:13px;">{{ vs.created_at|date:"d M Y" }}</td>
+        <td>
+          <a href="{% url 'services:visit-service-detail' vs.pk %}" class="btn btn-ghost btn-sm">View</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="8">
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg>
+            </div>
+            <p>No visit services found{% if filters.visit or filters.department or filters.status %} matching your filters{% endif %}.</p>
+            <a href="{% url 'services:visit-service-create' %}" class="btn btn-primary btn-sm">Add First Service</a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if is_paginated %}
+  <div class="pagination-row">
+    <span class="pagination-info">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      &nbsp;·&nbsp; {{ page_obj.paginator.count }} total
+    </span>
+    <div style="display:flex;gap:8px;">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if filters.visit %}&visit={{ filters.visit }}{% endif %}{% if filters.department %}&department={{ filters.department }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}"
+         class="btn btn-ghost btn-sm">← Prev</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if filters.visit %}&visit={{ filters.visit }}{% endif %}{% if filters.department %}&department={{ filters.department }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}"
+         class="btn btn-ghost btn-sm">Next →</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.badge-pending    { background: rgba(234,179,8,.15);  color: #854d0e; }
+.badge-in-progress{ background: rgba(59,130,246,.15); color: var(--blue); }
+.badge-completed  { background: rgba(5,150,105,.15);  color: #065f46; }
+.badge-cancelled  { background: rgba(239,68,68,.12);  color: #b91c1c; }
+.pagination-row   { display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border-light); }
+.pagination-info  { font-size:12.5px;color:var(--text-muted); }
+.empty-state      { display:flex;flex-direction:column;align-items:center;gap:12px;padding:48px 20px; }
+.empty-icon       { width:52px;height:52px;background:var(--surface-2);border-radius:50%;display:grid;place-items:center; }
+.empty-icon svg   { width:26px;height:26px;fill:var(--text-light); }
+.empty-state p    { font-size:14px;color:var(--text-muted); }
+</style>
+
+<script>
+document.querySelectorAll('.clickable-row').forEach(r => {
+  r.addEventListener('click', function(e){
+    if (!e.target.closest('a') && !e.target.closest('button')) window.location = this.dataset.href;
+  });
+});
+</script>
+{% endblock %}

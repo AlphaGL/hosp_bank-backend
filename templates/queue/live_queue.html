@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Live Queue — {{ today }}{% endblock %}
+
+{% block content %}
+<div class="queue-header">
+  <h1>Live Queue <span class="date-badge">{{ today }}</span></h1>
+  {% if department %}<span class="dept-badge">{{ department }}</span>{% endif %}
+  <a href="{% url 'queue:list' %}" class="btn btn-secondary">Full List</a>
+</div>
+
+{# Optional department filter #}
+<form method="get" class="filter-bar">
+  <input type="text" name="department" placeholder="Filter by department" value="{{ department }}">
+  <button type="submit" class="btn">Go</button>
+</form>
+
+{% if entries %}
+  <ol class="live-queue-list">
+    {% for entry in entries %}
+      <li class="live-entry priority-{{ entry.visit.priority }}">
+        <span class="q-number">Q{{ entry.queue_number }}</span>
+        <span class="patient-name">{{ entry.visit.patient.full_name }}</span>
+        <span class="dept">{{ entry.department }}</span>
+        {% if entry.visit.priority == 'emergency' %}
+          <span class="badge badge-emergency">EMERGENCY</span>
+        {% endif %}
+
+        <div class="entry-actions">
+          <form method="post" action="{% url 'queue:call' entry.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn btn-primary">Call</button>
+          </form>
+          <form method="post" action="{% url 'queue:skip' entry.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn btn-warning">Skip</button>
+          </form>
+        </div>
+      </li>
+    {% endfor %}
+  </ol>
+{% else %}
+  <p class="empty-state">Queue is empty.</p>
+{% endif %}
+{% endblock %}

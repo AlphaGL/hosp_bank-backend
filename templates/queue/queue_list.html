@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Queue — {{ today }}{% endblock %}
+
+{% block content %}
+<div class="queue-header">
+  <h1>Department Queue</h1>
+  <a href="{% url 'queue:live' %}" class="btn btn-primary">Live View</a>
+  <a href="{% url 'queue:summary' %}" class="btn btn-secondary">Summary</a>
+</div>
+
+{# Filter bar #}
+<form method="get" class="filter-bar">
+  <input type="date" name="date" value="{{ filters.date|default:today }}">
+  <input type="text" name="department" placeholder="Department" value="{{ filters.department }}">
+  <select name="status">
+    <option value="">All statuses</option>
+    {% for val, label in status_choices %}
+      <option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="priority">
+    <option value="">All priorities</option>
+    <option value="emergency" {% if filters.priority == "emergency" %}selected{% endif %}>Emergency</option>
+    <option value="normal" {% if filters.priority == "normal" %}selected{% endif %}>Normal</option>
+  </select>
+  <button type="submit" class="btn">Filter</button>
+</form>
+
+{% if entries %}
+  <table class="queue-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Patient</th>
+        <th>Department</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Called At</th>
+        <th>Attended By</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in entries %}
+        <tr class="status-{{ entry.status }}">
+          <td>{{ entry.queue_number }}</td>
+          <td><a href="{% url 'queue:detail' entry.pk %}">{{ entry.visit.patient.full_name }}</a></td>
+          <td>{{ entry.department }}</td>
+          <td>{{ entry.visit.priority }}</td>
+          <td>{{ entry.get_status_display }}</td>
+          <td>{{ entry.called_at|default:"—" }}</td>
+          <td>{{ entry.attended_by.get_full_name|default:"—" }}</td>
+          <td class="actions">
+            {% if entry.status == 'waiting' %}
+              <form method="post" action="{% url 'queue:call' entry.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-sm btn-primary">Call</button>
+              </form>
+              <form method="post" action="{% url 'queue:skip' entry.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-sm btn-warning">Skip</button>
+              </form>
+            {% elif entry.status == 'in_progress' %}
+              <form method="post" action="{% url 'queue:complete' entry.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-sm btn-success">Complete</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% include "pagination.html" %}
+
+{% else %}
+  <p class="empty-state">No queue entries found.</p>
+{% endif %}
+{% endblock %}

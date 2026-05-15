@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Department Workload{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h4 mb-0">Department Workload</h1>
+  <div class="d-flex gap-2 align-items-center">
+    <span class="text-muted small">{{ today|date:"d F Y" }}</span>
+    <a href="{% url 'dashboard-summary' %}" class="btn btn-sm btn-outline-secondary">← Dashboard</a>
+  </div>
+</div>
+
+{% if workload %}
+<div class="row g-3">
+  {% for dept in workload %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">{{ dept.department }}</div>
+      <div class="card-body">
+
+        <div class="d-flex justify-content-between mb-3">
+          <span class="text-muted small">Total</span>
+          <strong>{{ dept.total }}</strong>
+        </div>
+
+        {# Stacked progress bar #}
+        {% if dept.total %}
+        <div class="progress mb-3" style="height:12px">
+          <div class="progress-bar bg-warning"
+               title="Waiting: {{ dept.waiting }}"
+               style="width:{% widthratio dept.waiting dept.total 100 %}%"></div>
+          <div class="progress-bar bg-primary"
+               title="In Progress: {{ dept.in_progress }}"
+               style="width:{% widthratio dept.in_progress dept.total 100 %}%"></div>
+          <div class="progress-bar bg-success"
+               title="Completed: {{ dept.completed }}"
+               style="width:{% widthratio dept.completed dept.total 100 %}%"></div>
+        </div>
+        {% endif %}
+
+        <ul class="list-unstyled mb-0 small">
+          <li class="d-flex justify-content-between py-1 border-bottom">
+            <span><span class="badge bg-warning text-dark me-1">●</span> Waiting</span>
+            <strong>{{ dept.waiting }}</strong>
+          </li>
+          <li class="d-flex justify-content-between py-1 border-bottom">
+            <span><span class="badge bg-primary me-1">●</span> In Progress</span>
+            <strong>{{ dept.in_progress }}</strong>
+          </li>
+          <li class="d-flex justify-content-between py-1">
+            <span><span class="badge bg-success me-1">●</span> Completed</span>
+            <strong>{{ dept.completed }}</strong>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+  <div class="text-center text-muted py-5">
+    <p class="mb-0">No queue activity recorded for today.</p>
+  </div>
+{% endif %}
+{% endblock %}

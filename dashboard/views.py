@@ -1,103 +1,94 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
+from django.views.generic import TemplateView
 from django.db.models import Sum, Count, Q
 from datetime import timedelta
 
 
-class DashboardSummaryView(APIView):
-    permission_classes = [IsAuthenticated]
+class DashboardSummaryView(LoginRequiredMixin, TemplateView):
+    """
+    Replaces DashboardSummaryView (APIView).
+    Renders all stats into a template instead of returning JSON.
+    """
+    template_name = 'dashboard/summary.html'
 
-    def get(self, request):
-        today = timezone.localdate()
-        week_ago = today - timedelta(days=7)
-        month_start = today.replace(day=1)
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
 
         from patients.models import Patient, Visit
         from billing.models import Payment
         from queues.models import DepartmentQueue
 
-        # Patient stats
-        total_patients = Patient.objects.count()
-        patients_today = Patient.objects.filter(created_at__date=today).count()
+        today = timezone.localdate()
+        month_start = today.replace(day=1)
 
-        # Visit stats
+        # ── Patient stats ──────────────────────────────────────────────────
+        ctx['total_patients'] = Patient.objects.count()
+        ctx['patients_today'] = Patient.objects.filter(created_at__date=today).count()
+
+        # ── Visit stats ────────────────────────────────────────────────────
         visits_today = Visit.objects.filter(visit_date=today)
-        total_visits_today = visits_today.count()
-        completed_today = visits_today.filter(status='completed').count()
-        in_queue_today = visits_today.filter(status='in_queue').count()
-        in_progress_today = visits_today.filter(status='in_progress').count()
-        emergency_today = visits_today.filter(priority='emergency').count()
+        ctx['total_visits_today'] = visits_today.count()
+        ctx['completed_today']    = visits_today.filter(status='completed').count()
+        ctx['in_queue_today']     = visits_today.filter(status='in_queue').count()
+        ctx['in_progress_today']  = visits_today.filter(status='in_progress').count()
+        ctx['emergency_today']    = visits_today.filter(priority='emergency').count()
 
-        # Revenue stats
-        paid_today = Payment.objects.filter(
-            status='paid', paid_at__date=today
-        ).aggregate(total=Sum('amount_paid'))['total'] or 0
+        # ── Revenue stats ──────────────────────────────────────────────────
+        ctx['revenue_today'] = float(
+            Payment.objects.filter(status='paid', paid_at__date=today)
+            .aggregate(t=Sum('amount_paid'))['t'] or 0
+        )
+        ctx['revenue_this_month'] = float(
+            Payment.objects.filter(status='paid', paid_at__date__gte=month_start)
+            .aggregate(t=Sum('amount_paid'))['t'] or 0
+        )
+        ctx['pending_payments'] = Payment.objects.filter(status='pending').count()
+        ctx['pending_amount'] = float(
+            Payment.objects.filter(status='pending')
+            .aggregate(t=Sum('amount_due'))['t'] or 0
+        )
 
-        paid_this_month = Payment.objects.filter(
-            status='paid', paid_at__date__gte=month_start
-        ).aggregate(total=Sum('amount_paid'))['total'] or 0
-
-        pending_payments = Payment.objects.filter(status='pending').count()
-        pending_amount = Payment.objects.filter(
-            status='pending'
-        ).aggregate(total=Sum('amount_due'))['total'] or 0
-
-        # Queue summary per department
-        queue_summary = list(
+        # ── Queue summary per department ───────────────────────────────────
+        ctx['queue_summary'] = list(
             DepartmentQueue.objects.filter(date=today)
             .values('department', 'status')
             .annotate(count=Count('id'))
             .order_by('department')
         )
 
-        # Visit trend (last 7 days)
+        # ── 7-day visit + revenue trend ────────────────────────────────────
         trend = []
         for i in range(6, -1, -1):
             d = today - timedelta(days=i)
-            count = Visit.objects.filter(visit_date=d).count()
-            revenue = Payment.objects.filter(paid_at__date=d, status='paid').aggregate(
-                t=Sum('amount_paid'))['t'] or 0
             trend.append({
-                'date': d.isoformat(),
-                'visits': count,
-                'revenue': float(revenue),
+                'date': d.strftime('%d %b'),
+                'visits': Visit.objects.filter(visit_date=d).count(),
+                'revenue': float(
+                    Payment.objects.filter(paid_at__date=d, status='paid')
+                    .aggregate(t=Sum('amount_paid'))['t'] or 0
+                ),
             })
+        ctx['weekly_trend'] = trend
+        ctx['today'] = today
 
-        return Response({
-            'date': today.isoformat(),
-            'patients': {
-                'total': total_patients,
-                'new_today': patients_today,
-            },
-            'visits': {
-                'total_today': total_visits_today,
-                'completed': completed_today,
-                'in_queue': in_queue_today,
-                'in_progress': in_progress_today,
-                'emergency': emergency_today,
-            },
-            'revenue': {
-                'today': float(paid_today),
-                'this_month': float(paid_this_month),
-                'pending_count': pending_payments,
-                'pending_amount': float(pending_amount),
-            },
-            'queue_summary': queue_summary,
-            'weekly_trend': trend,
-        })
+        return ctx
 
 
-class DepartmentWorkloadView(APIView):
-    permission_classes = [IsAuthenticated]
+class DepartmentWorkloadView(LoginRequiredMixin, TemplateView):
+    """
+    Replaces DepartmentWorkloadView (APIView).
+    Renders per-department queue workload for today.
+    """
+    template_name = 'dashboard/workload.html'
 
-    def get(self, request):
-        today = timezone.localdate()
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
         from queues.models import DepartmentQueue
-        from django.db.models import Avg, ExpressionWrapper, DurationField, F
 
-        data = (
+        today = timezone.localdate()
+        ctx['workload'] = list(
             DepartmentQueue.objects
             .filter(date=today)
             .values('department')
@@ -109,4 +100,5 @@ class DepartmentWorkloadView(APIView):
             )
             .order_by('department')
         )
-        return Response(list(data))
+        ctx['today'] = today
+        return ctx

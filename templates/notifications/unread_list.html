@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}Unread Notifications — MediCore HMS{% endblock %}
+{% block page_title %}Unread Notifications{% endblock %}
+{% block nav_notifications %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <a href="{% url 'notifications:list' %}" style="display:inline-flex;align-items:center;gap:6px;color:var(--text-muted);text-decoration:none;font-size:13px;font-weight:500;margin-bottom:8px;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px;"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            All Notifications
+        </a>
+        <h1 class="page-title">
+            Unread
+            {% if count %}
+            <span style="display:inline-flex;align-items:center;justify-content:center;background:var(--danger);color:#fff;font-size:13px;font-weight:700;border-radius:20px;padding:2px 10px;margin-left:8px;vertical-align:middle;">{{ count }}</span>
+            {% endif %}
+        </h1>
+        <p class="page-subtitle">Notifications that need your attention</p>
+    </div>
+    <div class="page-header-actions">
+        {% if notifications %}
+        <form method="post" action="{% url 'notifications:mark-all-read' %}" id="mark-all-form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-sm">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 7l-1.41-1.41-6.34 6.34-2.83-2.83L6 10.5l4.24 4.24L18 7zm-11.5 9H5V3h14v9.09c.72.12 1.39.37 2 .72V3c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v18l4-4h4.09c-.06-.33-.09-.66-.09-1 0-.34.03-.67.09-1H7.41l-.91.91z"/></svg>
+                Mark all read
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+{% if notifications %}
+<div style="display:flex;flex-direction:column;gap:10px;" id="unread-list">
+    {% for notif in notifications %}
+    <div class="unread-card" id="notif-card-{{ notif.pk }}">
+        <div class="unread-icon
+            {% if notif.event_type == 'payment_confirmed' %}icon-payment
+            {% elif notif.event_type == 'patient_queued' %}icon-queue
+            {% elif notif.event_type == 'diagnosis_completed' %}icon-diag
+            {% else %}icon-general{% endif %}">
+            {% if notif.event_type == 'payment_confirmed' %}
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+            {% elif notif.event_type == 'patient_queued' %}
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+            {% elif notif.event_type == 'diagnosis_completed' %}
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+            {% else %}
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+            {% endif %}
+        </div>
+        <div class="unread-body">
+            <div class="unread-message">{{ notif.message }}</div>
+            <div class="unread-meta">
+                {% if notif.visit %}
+                <span>
+                    <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px;"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    {{ notif.visit.patient.full_name }}
+                </span>
+                {% endif %}
+                <span>
+                    <svg viewBox="0 0 24 24" fill="currentColor" style="width:12px;height:12px;"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm.01 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
+                    {{ notif.created_at|timesince }} ago
+                </span>
+                {% if notif.event_type == 'payment_confirmed' %}
+                    <span class="badge badge-success" style="font-size:10.5px;">Payment</span>
+                {% elif notif.event_type == 'patient_queued' %}
+                    <span class="badge badge-warn" style="font-size:10.5px;">Queued</span>
+                {% elif notif.event_type == 'diagnosis_completed' %}
+                    <span class="badge badge-info" style="font-size:10.5px;">Diagnosis</span>
+                {% else %}
+                    <span class="badge badge-registered" style="font-size:10.5px;">General</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="unread-actions">
+            <a href="{% url 'notifications:detail' notif.pk %}" class="btn btn-ghost btn-sm" title="View">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                View
+            </a>
+            <form method="post" action="{% url 'notifications:mark-read' notif.pk %}" class="mark-read-form" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-teal btn-sm" title="Mark as read">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                    Done
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if count > notifications|length %}
+<div style="text-align:center;margin-top:20px;">
+    <a href="{% url 'notifications:list' %}?is_read=false" class="btn btn-secondary btn-sm">
+        View all {{ count }} unread notifications
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+    </a>
+</div>
+{% endif %}
+
+{% else %}
+<div class="card" style="padding:80px 20px;text-align:center;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+        <div style="width:72px;height:72px;background:var(--success-light);border-radius:50%;display:grid;place-items:center;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:36px;height:36px;color:var(--success);"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+        </div>
+        <div>
+            <p style="font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">You're all caught up!</p>
+            <p style="font-size:13.5px;color:var(--text-muted);">No unread notifications at this time.</p>
+        </div>
+        <a href="{% url 'notifications:list' %}" class="btn btn-secondary btn-sm">View all notifications</a>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .unread-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--blue);
+        border-radius: var(--radius-lg);
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: var(--shadow-sm);
+        transition: box-shadow var(--transition), transform var(--transition);
+    }
+    .unread-card:hover {
+        box-shadow: var(--shadow);
+        transform: translateX(2px);
+    }
+    .unread-card.read-out {
+        opacity: 0;
+        transform: translateX(20px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .unread-icon {
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+    }
+    .unread-icon svg { width: 20px; height: 20px; }
+    .icon-payment { background: var(--success-light); color: var(--success); }
+    .icon-queue    { background: var(--warn-light);    color: var(--warn);    }
+    .icon-diag     { background: var(--teal-light);    color: var(--teal);    }
+    .icon-general  { background: var(--blue-light);    color: var(--blue);    }
+    .unread-body {
+        flex: 1;
+        min-width: 0;
+    }
+    .unread-message {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 5px;
+        line-height: 1.4;
+    }
+    .unread-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+        flex-wrap: wrap;
+    }
+    .unread-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .unread-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+    @media (max-width: 640px) {
+        .unread-card { flex-wrap: wrap; }
+        .unread-actions { width: 100%; justify-content: flex-end; }
+    }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // AJAX mark-read per card
+    document.querySelectorAll('.mark-read-form').forEach(form => {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const card = form.closest('.unread-card');
+            const res = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value },
+            });
+            if (res.ok) {
+                card.classList.add('read-out');
+                setTimeout(() => {
+                    card.remove();
+                    updateCount(-1);
+                    checkEmpty();
+                }, 320);
+            }
+        });
+    });
+
+    // AJAX mark-all-read
+    const markAllForm = document.getElementById('mark-all-form');
+    if (markAllForm) {
+        markAllForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const res = await fetch(markAllForm.action, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': markAllForm.querySelector('[name=csrfmiddlewaretoken]').value },
+            });
+            if (res.ok) {
+                document.querySelectorAll('.unread-card').forEach((card, i) => {
+                    setTimeout(() => {
+                        card.classList.add('read-out');
+                        setTimeout(() => card.remove(), 320);
+                    }, i * 60);
+                });
+                setTimeout(checkEmpty, document.querySelectorAll('.unread-card').length * 60 + 400);
+                updateCount(0, true);
+            }
+        });
+    }
+
+    function updateCount(delta, zero = false) {
+        const badge = document.querySelector('h1 span[style*="background:var(--danger)"]');
+        const navBadge = document.querySelector('.nav-badge');
+        const topDot = document.querySelector('.notif-dot');
+
+        if (zero) {
+            if (badge) badge.remove();
+            if (navBadge) navBadge.remove();
+            if (topDot) topDot.remove();
+            return;
+        }
+        if (badge) {
+            const current = parseInt(badge.textContent) + delta;
+            if (current <= 0) {
+                badge.remove();
+                if (navBadge) navBadge.remove();
+                if (topDot) topDot.remove();
+            } else {
+                badge.textContent = current;
+                if (navBadge) navBadge.textContent = current;
+            }
+        }
+    }
+
+    function checkEmpty() {
+        const list = document.getElementById('unread-list');
+        if (list && list.children.length === 0) {
+            list.outerHTML = `
+                <div class="card" style="padding:80px 20px;text-align:center;">
+                    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+                        <div style="width:72px;height:72px;background:var(--success-light);border-radius:50%;display:grid;place-items:center;">
+                            <svg viewBox="0 0 24 24" fill="currentColor" style="width:36px;height:36px;color:var(--success);"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+                        </div>
+                        <div>
+                            <p style="font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:4px;">You're all caught up!</p>
+                            <p style="font-size:13.5px;color:var(--text-muted);">No unread notifications at this time.</p>
+                        </div>
+                        <a href="/notifications/" class="btn btn-secondary btn-sm">View all notifications</a>
+                    </div>
+                </div>`;
+            const markAllBtn = document.querySelector('#mark-all-form');
+            if (markAllBtn) markAllBtn.remove();
+        }
+    }
+</script>
+{% endblock %}
