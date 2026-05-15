@@ -1,49 +1,243 @@
 {% extends "base.html" %}
-{% block title %}My Profile{% endblock %}
+{% block title %}My Profile — MediCore HMS{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f0e0d; --paper: #f7f5f2; --card: #ffffff;
+  --accent: #c8501a; --accent-light: #f4e8e1;
+  --muted: #7a7570; --border: #e5e2dd;
+  --success: #2a7d4f; --success-bg: #e6f4ed;
+  --danger: #b91c1c; --danger-bg: #fee2e2; --danger-border: #fca5a5;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15,14,13,.06), 0 4px 16px rgba(15,14,13,.06);
+}
+body { background: var(--paper); font-family: 'DM Sans', sans-serif; color: var(--ink); }
+
+.profile-shell { max-width: 540px; margin: 0 auto; animation: fadeUp .22s ease both; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+
+/* ── Hero ── */
+.profile-hero {
+  display: flex; align-items: center; gap: 1.1rem;
+  margin-bottom: 1.5rem; flex-wrap: wrap;
+}
+.profile-avatar {
+  width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent) 0%, #e07a50 100%);
+  display: grid; place-items: center;
+  font-family: 'Syne', sans-serif; font-size: 1.25rem; font-weight: 800;
+  color: #fff; letter-spacing: .02em;
+  box-shadow: 0 4px 14px rgba(200,80,26,.28);
+}
+.profile-name {
+  font-family: 'Syne', sans-serif; font-size: 1.5rem;
+  font-weight: 800; letter-spacing: -.02em; margin: 0 0 .2rem;
+}
+.profile-meta { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+.role-chip {
+  display: inline-block; padding: .22rem .65rem; border-radius: 5px;
+  font-size: .73rem; font-weight: 600;
+  background: var(--accent-light); color: var(--accent);
+  border: 1px solid rgba(200,80,26,.2);
+}
+.joined-text { font-size: .78rem; color: var(--muted); }
+
+/* ── Sign out button ── */
+.btn-signout {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .42rem .95rem; border-radius: 8px; font-size: .82rem; font-weight: 600;
+  border: 1.5px solid var(--danger-border); background: var(--danger-bg);
+  color: var(--danger); cursor: pointer; font-family: inherit;
+  transition: all .13s;
+}
+.btn-signout:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+/* ── Alerts ── */
+.alert-wrap { margin-bottom: 1.25rem; }
+.alert-msg {
+  display: flex; align-items: flex-start; gap: .6rem;
+  padding: .75rem 1rem; border-radius: 8px; font-size: .85rem;
+  position: relative; margin-bottom: .5rem;
+}
+.alert-msg.success { background: var(--success-bg); color: var(--success); border: 1px solid #b2d9c2; }
+.alert-msg.error   { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border); }
+.alert-msg.info    { background: #e1eef8; color: #1a6da8; border: 1px solid #b2d0e8; }
+.alert-close { margin-left: auto; background: none; border: none; cursor: pointer; color: inherit; opacity: .55; font-size: 1rem; padding: 0; line-height: 1; }
+.alert-close:hover { opacity: 1; }
+
+/* ── Info card ── */
+.info-card {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  box-shadow: var(--shadow); margin-bottom: 1.25rem;
+}
+.info-card-header {
+  padding: .72rem 1.2rem;
+  background: var(--paper); border-bottom: 1.5px solid var(--border);
+  font-family: 'Syne', sans-serif; font-size: .7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .09em; color: var(--muted);
+}
+.info-rows { display: flex; flex-direction: column; }
+.info-row {
+  display: flex; gap: 1rem; align-items: center;
+  padding: .78rem 1.2rem; border-bottom: 1px solid var(--border);
+  font-size: .87rem;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row dt { color: var(--muted); font-weight: 500; font-size: .82rem; width: 110px; flex-shrink: 0; }
+.info-row dd { font-weight: 500; margin: 0; }
+.username-code {
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: .8rem; background: var(--paper);
+  padding: .15rem .45rem; border-radius: 5px;
+  border: 1px solid var(--border); color: var(--ink);
+}
+
+/* ── Edit form card ── */
+.form-card {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
+}
+.form-card-header {
+  padding: .72rem 1.2rem;
+  background: var(--paper); border-bottom: 1.5px solid var(--border);
+  font-family: 'Syne', sans-serif; font-size: .7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .09em; color: var(--muted);
+}
+.form-card-body { padding: 1.4rem; display: flex; flex-direction: column; gap: 1.1rem; }
+
+.field-group {}
+.field-label { display: block; font-weight: 600; font-size: .83rem; margin-bottom: .38rem; }
+
+.form-card select,
+.form-card input[type="text"],
+.form-card input[type="email"],
+.form-card input[type="password"],
+.form-card input[type="number"],
+.form-card textarea {
+  width: 100%; padding: .55rem .9rem; border-radius: 8px;
+  border: 1.5px solid var(--border); background: var(--paper);
+  font-family: inherit; font-size: .88rem; color: var(--ink);
+  transition: border .15s, box-shadow .15s; box-sizing: border-box;
+}
+.form-card select { appearance: none; padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a7570'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+.form-card input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
+.form-card textarea { resize: vertical; min-height: 80px; }
+.form-card select:focus,
+.form-card input:focus,
+.form-card textarea:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,80,26,.1);
+}
+.field-error { margin-top: .3rem; font-size: .77rem; color: var(--accent); }
+
+.form-actions {
+  display: flex; justify-content: flex-end;
+  padding: 1rem 1.4rem;
+  border-top: 1.5px solid var(--border); background: var(--paper);
+}
+.btn-submit {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .52rem 1.35rem; border-radius: 8px;
+  background: var(--accent); color: #fff; border: none;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .88rem;
+  cursor: pointer; transition: opacity .15s, transform .1s;
+  box-shadow: 0 2px 8px rgba(200,80,26,.25);
+}
+.btn-submit:hover { opacity: .88; transform: translateY(-1px); }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-6">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="h4 mb-0">My Profile</h1>
-      <form method="post" action="{% url 'patients:logout' %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-sm btn-outline-danger">Sign out</button>
-      </form>
+<div class="profile-shell">
+
+  {# ── Hero + sign-out ── #}
+  <div class="profile-hero">
+    <div class="profile-avatar">
+      {{ staff.first_name|first|upper|default:staff.username|first|upper }}{{ staff.last_name|first|upper|default:"" }}
     </div>
-
-    {% if messages %}
-      {% for m in messages %}
-        <div class="alert alert-{{ m.tags }} alert-dismissible fade show">{{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-      {% endfor %}
-    {% endif %}
-
-    <div class="card mb-3">
-      <div class="card-body">
-        <p class="mb-1"><strong>Username:</strong> {{ staff.username }}</p>
-        <p class="mb-1"><strong>Role:</strong> {{ staff.get_role_display }}</p>
-        <p class="mb-0"><strong>Joined:</strong> {{ staff.date_joined|date:"d M Y" }}</p>
+    <div>
+      <h1 class="profile-name">
+        {{ staff.get_full_name|default:staff.username }}
+      </h1>
+      <div class="profile-meta">
+        <span class="role-chip">{{ staff.get_role_display }}</span>
+        <span class="joined-text">Joined {{ staff.date_joined|date:"d M Y" }}</span>
       </div>
     </div>
-
-    <div class="card">
-      <div class="card-header fw-semibold">Edit Details</div>
-      <div class="card-body">
-        <form method="post">
-          {% csrf_token %}
-          {% for field in form %}
-          <div class="mb-3">
-            <label class="form-label">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
-          </div>
-          {% endfor %}
-          <div class="d-flex justify-content-end">
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <form method="post" action="{% url 'patients:logout' %}" style="margin-left:auto;">
+      {% csrf_token %}
+      <button type="submit" class="btn-signout">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Sign out
+      </button>
+    </form>
   </div>
+
+  {# ── Alerts ── #}
+  {% if messages %}
+  <div class="alert-wrap">
+    {% for m in messages %}
+    <div class="alert-msg {{ m.tags }}">
+      {{ m }}
+      <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Account info ── #}
+  <div class="info-card">
+    <div class="info-card-header">Account Info</div>
+    <dl class="info-rows">
+      <div class="info-row">
+        <dt>Username</dt>
+        <dd><span class="username-code">{{ staff.username }}</span></dd>
+      </div>
+      <div class="info-row">
+        <dt>Role</dt>
+        <dd><span class="role-chip">{{ staff.get_role_display }}</span></dd>
+      </div>
+      <div class="info-row">
+        <dt>Joined</dt>
+        <dd style="color:var(--muted); font-size:.83rem;">{{ staff.date_joined|date:"d M Y" }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  {# ── Edit form ── #}
+  <div class="form-card">
+    <div class="form-card-header">Edit Details</div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-card-body">
+        {% for field in form %}
+        <div class="field-group">
+          <label class="field-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}
+            <div class="field-error">{{ field.errors }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-submit">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+
 </div>
 {% endblock %}

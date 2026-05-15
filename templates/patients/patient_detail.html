@@ -1,209 +1,319 @@
 {% extends "base.html" %}
 {% block title %}{{ patient.full_name }} — MediCore HMS{% endblock %}
-{% block page_title %}Patient Detail{% endblock %}
 {% block nav_patients %}active{% endblock %}
 
-{% block content %}
-<div class="page-header">
-    <div>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div class="detail-avatar">{{ patient.first_name|first|upper }}{{ patient.last_name|first|upper }}</div>
-            <div>
-                <h1 class="page-title">{{ patient.full_name }}</h1>
-                <span class="pid-chip" style="margin-top:4px;display:inline-block;">{{ patient.patient_id }}</span>
-            </div>
-        </div>
-    </div>
-    <div class="page-header-actions">
-        <a href="{% url 'patients:patient-list' %}" class="btn btn-ghost btn-sm">← Back</a>
-        <a href="{% url 'patients:patient-update' patient.pk %}" class="btn btn-secondary btn-sm">Edit Patient</a>
-        <a href="{% url 'patients:visit-create' %}?patient={{ patient.pk }}" class="btn btn-primary btn-sm">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-            New Visit
-        </a>
-    </div>
-</div>
-
-<!-- INFO GRID -->
-<div class="detail-grid">
-    <!-- Personal Info -->
-    <div class="card">
-        <div class="card-header">
-            <span class="card-title">Personal Information</span>
-        </div>
-        <div class="card-body">
-            <dl class="info-list">
-                <div class="info-row">
-                    <dt>Age</dt>
-                    <dd>{{ patient.age }} years</dd>
-                </div>
-                <div class="info-row">
-                    <dt>Gender</dt>
-                    <dd>{{ patient.get_gender_display }}</dd>
-                </div>
-                <div class="info-row">
-                    <dt>Phone</dt>
-                    <dd style="font-family:'JetBrains Mono',monospace;font-size:13px;">{{ patient.phone }}</dd>
-                </div>
-                <div class="info-row">
-                    <dt>Email</dt>
-                    <dd>{{ patient.email|default:"—" }}</dd>
-                </div>
-                <div class="info-row">
-                    <dt>Address</dt>
-                    <dd>{{ patient.address|default:"—" }}</dd>
-                </div>
-            </dl>
-        </div>
-    </div>
-
-    <!-- Registration Info -->
-    <div class="card">
-        <div class="card-header">
-            <span class="card-title">Registration Details</span>
-        </div>
-        <div class="card-body">
-            <dl class="info-list">
-                <div class="info-row">
-                    <dt>Registered by</dt>
-                    <dd>{{ patient.registered_by.get_full_name|default:patient.registered_by.username|default:"—" }}</dd>
-                </div>
-                <div class="info-row">
-                    <dt>Date registered</dt>
-                    <dd>{{ patient.created_at|date:"d M Y, H:i" }}</dd>
-                </div>
-                <div class="info-row">
-                    <dt>Last updated</dt>
-                    <dd>{{ patient.updated_at|date:"d M Y, H:i" }}</dd>
-                </div>
-                <div class="info-row">
-                    <dt>Total visits</dt>
-                    <dd>
-                        <span class="badge badge-registered">{{ visits.count }} visit{{ visits.count|pluralize }}</span>
-                    </dd>
-                </div>
-            </dl>
-        </div>
-    </div>
-</div>
-
-<!-- VISIT HISTORY -->
-<div class="card" style="margin-top:24px;">
-    <div class="card-header">
-        <span class="card-title">Visit History</span>
-        <a href="{% url 'patients:visit-create' %}?patient={{ patient.pk }}" class="btn btn-primary btn-sm">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-            New Visit
-        </a>
-    </div>
-    <table>
-        <thead>
-            <tr>
-                <th>Visit #</th>
-                <th>Date</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Created By</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for v in visits %}
-            <tr>
-                <td><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--text-muted);">#{{ v.pk }}</span></td>
-                <td style="color:var(--text-muted);">{{ v.visit_date|date:"d M Y" }}</td>
-                <td>
-                    {% if v.priority == 'emergency' %}
-                        <span class="badge badge-emergency">Emergency</span>
-                    {% else %}
-                        <span class="badge badge-normal">Normal</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if v.status == 'completed' %}
-                        <span class="badge badge-completed">Completed</span>
-                    {% elif v.status == 'in_progress' %}
-                        <span class="badge badge-in_progress">In Progress</span>
-                    {% elif v.status == 'awaiting_payment' %}
-                        <span class="badge badge-awaiting_payment">Awaiting Payment</span>
-                    {% elif v.status == 'paid' %}
-                        <span class="badge badge-refunded">Paid</span>
-                    {% elif v.status == 'in_queue' %}
-                        <span class="badge badge-in_queue">In Queue</span>
-                    {% elif v.status == 'cancelled' %}
-                        <span class="badge badge-cancelled">Cancelled</span>
-                    {% else %}
-                        <span class="badge badge-registered">{{ v.get_status_display }}</span>
-                    {% endif %}
-                </td>
-                <td style="color:var(--text-secondary);">{{ v.created_by.get_full_name|default:v.created_by.username|default:"—" }}</td>
-                <td>
-                    <a href="{% url 'patients:visit-detail' v.pk %}" class="btn btn-ghost btn-sm">View</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6">
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-                        </div>
-                        <p>No visits on record for this patient.</p>
-                        <a href="{% url 'patients:visit-create' %}?patient={{ patient.pk }}" class="btn btn-primary btn-sm">Create First Visit</a>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
 <style>
-.detail-avatar {
-    width:60px;height:60px;
-    background:linear-gradient(135deg,var(--blue) 0%,var(--teal) 100%);
-    border-radius:50%;
-    display:grid;place-items:center;
-    font-size:20px;font-weight:700;color:white;flex-shrink:0;
-    box-shadow:0 4px 12px rgba(26,86,219,0.25);
+:root {
+  --ink: #0f0e0d; --paper: #f7f5f2; --card: #ffffff;
+  --accent: #c8501a; --accent-light: #f4e8e1;
+  --muted: #7a7570; --border: #e5e2dd;
+  --success: #2a7d4f; --success-bg: #e6f4ed;
+  --warning: #b07a10; --warning-bg: #fdf3dc;
+  --info: #1a6da8; --info-bg: #e1eef8;
+  --danger-bg: #fbeee9;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15,14,13,.06), 0 4px 16px rgba(15,14,13,.06);
+}
+body { background: var(--paper); font-family: 'DM Sans', sans-serif; color: var(--ink); }
+
+/* ── Top bar ── */
+.top-bar {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 1.75rem;
+}
+.patient-hero { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.patient-avatar {
+  width: 58px; height: 58px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent) 0%, #e07a50 100%);
+  display: grid; place-items: center;
+  font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800;
+  color: #fff; letter-spacing: .02em;
+  box-shadow: 0 4px 14px rgba(200,80,26,.28);
+}
+.patient-name {
+  font-family: 'Syne', sans-serif; font-size: 1.55rem;
+  font-weight: 800; letter-spacing: -.02em; margin: 0 0 .35rem;
 }
 .pid-chip {
-    background:var(--blue-soft);color:var(--blue);
-    padding:3px 10px;border-radius:6px;
-    font-size:12px;font-weight:700;
-    font-family:'JetBrains Mono',monospace;
+  display: inline-block;
+  background: var(--info-bg); color: var(--info);
+  padding: .2rem .65rem; border-radius: 5px;
+  font-family: 'SF Mono','Fira Code',monospace; font-size: .73rem; font-weight: 700;
+  border: 1px solid #c2d8ee; letter-spacing: .02em;
 }
+
+/* ── Action buttons ── */
+.action-bar { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+.btn-back {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .42rem .95rem; border-radius: 8px; font-size: .82rem; font-weight: 500;
+  border: 1.5px solid var(--border); background: var(--card);
+  color: var(--muted); text-decoration: none; transition: all .13s;
+}
+.btn-back:hover { border-color: var(--ink); color: var(--ink); }
+.btn-edit {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .42rem .95rem; border-radius: 8px; font-size: .82rem; font-weight: 600;
+  border: 1.5px solid var(--border); background: var(--card);
+  color: var(--ink); text-decoration: none; transition: all .13s;
+}
+.btn-edit:hover { border-color: var(--info); color: var(--info); background: var(--info-bg); }
+.btn-visit {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: var(--accent); color: #fff;
+  padding: .45rem 1.05rem; border-radius: 8px;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .83rem;
+  border: none; text-decoration: none; transition: opacity .15s;
+  box-shadow: 0 2px 8px rgba(200,80,26,.25);
+}
+.btn-visit:hover { opacity: .88; color: #fff; }
+
+/* ── Info grid ── */
 .detail-grid {
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:16px;
-    margin-bottom:0;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1.25rem; margin-bottom: 1.25rem;
 }
-@media (max-width:700px) { .detail-grid { grid-template-columns:1fr; } }
-.info-list { display:flex;flex-direction:column;gap:0; }
-.info-row {
-    display:flex;align-items:baseline;
-    padding:11px 0;
-    border-bottom:1px solid var(--border-light);
-    gap:12px;
+@media (max-width: 700px) { .detail-grid { grid-template-columns: 1fr; } }
+
+.info-card {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
 }
-.info-row:last-child { border-bottom:none; }
-.info-row dt {
-    width:130px;flex-shrink:0;
-    font-size:12px;font-weight:700;
-    text-transform:uppercase;letter-spacing:0.5px;
-    color:var(--text-muted);
+.card-header-strip {
+  padding: .7rem 1.2rem;
+  background: var(--paper); border-bottom: 1.5px solid var(--border);
+  font-family: 'Syne', sans-serif; font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+  display: flex; align-items: center; justify-content: space-between;
 }
-.info-row dd { color:var(--text-primary);font-size:13.5px; }
-.empty-state {
-    display:flex;flex-direction:column;align-items:center;gap:12px;
-    padding:48px 20px;
+.info-dl { display: grid; grid-template-columns: 120px 1fr; }
+.info-dl dt, .info-dl dd {
+  padding: .72rem 1.2rem; margin: 0;
+  border-bottom: 1px solid var(--border); font-size: .87rem;
 }
-.empty-icon {
-    width:52px;height:52px;background:var(--surface-2);
-    border-radius:50%;display:grid;place-items:center;
+.info-dl dt { color: var(--muted); font-size: .8rem; font-weight: 500; }
+.info-dl dd { font-weight: 400; }
+.info-dl dt:last-of-type, .info-dl dd:last-of-type { border-bottom: none; }
+
+/* ── Total-visits badge ── */
+.visit-count-badge {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .25rem .7rem; border-radius: 999px;
+  font-size: .75rem; font-weight: 600;
+  background: var(--accent-light); color: var(--accent);
+  border: 1px solid rgba(200,80,26,.2);
 }
-.empty-icon svg { width:26px;height:26px;fill:var(--text-light); }
-.empty-state p { font-size:14px;color:var(--text-muted); }
+
+/* ── Visit history table card ── */
+.history-card {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
+}
+.history-card table { width: 100%; border-collapse: collapse; margin: 0; }
+.history-card thead th {
+  background: var(--paper); padding: .7rem 1.1rem;
+  font-family: 'Syne', sans-serif; font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+  border-bottom: 1.5px solid var(--border);
+}
+.history-card tbody td {
+  padding: .85rem 1.1rem; border-bottom: 1px solid var(--border);
+  font-size: .87rem; vertical-align: middle;
+}
+.history-card tbody tr:last-child td { border-bottom: none; }
+.history-card tbody tr { transition: background .12s; }
+.history-card tbody tr:hover { background: #faf9f7; }
+
+/* ── Status badges ── */
+.status-badge {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .25rem .7rem; border-radius: 999px;
+  font-size: .73rem; font-weight: 600;
+}
+.status-badge::before { content:''; width:6px; height:6px; border-radius:50%; display:inline-block; }
+.s-completed  { background: var(--success-bg); color: var(--success); }
+.s-completed::before { background: var(--success); }
+.s-in_progress { background: #e8f0fd; color: #1a4fa8; }
+.s-in_progress::before { background: #1a4fa8; }
+.s-awaiting_payment { background: var(--warning-bg); color: var(--warning); }
+.s-awaiting_payment::before { background: var(--warning); }
+.s-paid  { background: var(--info-bg); color: var(--info); }
+.s-paid::before { background: var(--info); }
+.s-cancelled { background: #f0efee; color: var(--muted); }
+.s-cancelled::before { background: var(--muted); }
+.s-in_queue { background: #f3f0fb; color: #6d3fa8; }
+.s-in_queue::before { background: #6d3fa8; }
+
+.priority-badge {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .2rem .6rem; border-radius: 5px;
+  font-size: .73rem; font-weight: 600;
+}
+.p-emergency { background: var(--danger-bg); color: var(--accent); }
+.p-normal    { background: #f0efee; color: var(--muted); }
+
+/* ── Visit ID ── */
+.v-id {
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: .75rem; color: var(--muted); font-weight: 700;
+}
+
+/* ── Buttons in table ── */
+.btn-view-sm {
+  display: inline-flex; align-items: center; gap: .25rem;
+  padding: .28rem .7rem; border-radius: 6px; font-size: .76rem; font-weight: 600;
+  border: 1.5px solid var(--border); background: var(--card);
+  color: var(--ink); text-decoration: none; transition: all .13s;
+}
+.btn-view-sm:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+/* ── Empty state ── */
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+.empty-icon { font-size: 2rem; opacity: .3; margin-bottom: .6rem; }
+.empty-state p { font-size: .88rem; margin: 0 0 1rem; }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+.info-card { animation: fadeUp .22s ease both; }
+.info-card:nth-child(2) { animation-delay: .06s; }
+.history-card { animation: fadeUp .25s ease .1s both; }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="top-bar">
+  <div class="patient-hero">
+    <div class="patient-avatar">
+      {{ patient.first_name|first|upper }}{{ patient.last_name|first|upper }}
+    </div>
+    <div>
+      <h1 class="patient-name">{{ patient.full_name }}</h1>
+      <span class="pid-chip">{{ patient.patient_id }}</span>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <a href="{% url 'patients:patient-list' %}" class="btn-back">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </a>
+    <a href="{% url 'patients:patient-update' patient.pk %}" class="btn-edit">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      Edit
+    </a>
+    <a href="{% url 'patients:visit-create' %}?patient={{ patient.pk }}" class="btn-visit">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Visit
+    </a>
+  </div>
+</div>
+
+<div class="detail-grid">
+  {# Personal Info #}
+  <div class="info-card">
+    <div class="card-header-strip">Personal Information</div>
+    <dl class="info-dl">
+      <dt>Age</dt>
+      <dd>{{ patient.age }} <span style="color:var(--muted);font-size:.8rem;">years</span></dd>
+      <dt>Gender</dt>
+      <dd>{{ patient.get_gender_display }}</dd>
+      <dt>Phone</dt>
+      <dd style="font-family:'SF Mono','Fira Code',monospace;font-size:.8rem;">{{ patient.phone }}</dd>
+      <dt>Email</dt>
+      <dd style="{% if not patient.email %}color:var(--muted){% endif %}">{{ patient.email|default:"—" }}</dd>
+      <dt>Address</dt>
+      <dd style="{% if not patient.address %}color:var(--muted){% endif %}; white-space:pre-line;">{{ patient.address|default:"—" }}</dd>
+    </dl>
+  </div>
+
+  {# Registration Info #}
+  <div class="info-card">
+    <div class="card-header-strip">Registration Details</div>
+    <dl class="info-dl">
+      <dt>Registered by</dt>
+      <dd>{{ patient.registered_by.get_full_name|default:patient.registered_by.username|default:"—" }}</dd>
+      <dt>Date registered</dt>
+      <dd style="font-size:.83rem; color:var(--muted);">{{ patient.created_at|date:"d M Y, H:i" }}</dd>
+      <dt>Last updated</dt>
+      <dd style="font-size:.83rem; color:var(--muted);">{{ patient.updated_at|date:"d M Y, H:i" }}</dd>
+      <dt>Total visits</dt>
+      <dd>
+        <span class="visit-count-badge">
+          <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          {{ visits.count }} visit{{ visits.count|pluralize }}
+        </span>
+      </dd>
+    </dl>
+  </div>
+</div>
+
+{# Visit History #}
+<div class="history-card">
+  <div class="card-header-strip">
+    Visit History
+    <a href="{% url 'patients:visit-create' %}?patient={{ patient.pk %}" class="btn-visit" style="font-size:.76rem; padding:.3rem .75rem;">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Visit
+    </a>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Visit #</th>
+        <th>Date</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Created By</th>
+        <th style="width:70px"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for v in visits %}
+      <tr>
+        <td><span class="v-id">#{{ v.pk }}</span></td>
+        <td style="color:var(--muted); font-size:.83rem;">{{ v.visit_date|date:"d M Y" }}</td>
+        <td>
+          <span class="priority-badge {% if v.priority == 'emergency' %}p-emergency{% else %}p-normal{% endif %}">
+            {% if v.priority == 'emergency' %}⚡{% endif %}
+            {{ v.get_priority_display }}
+          </span>
+        </td>
+        <td>
+          <span class="status-badge
+            {% if v.status == 'completed' %}s-completed
+            {% elif v.status == 'in_progress' %}s-in_progress
+            {% elif v.status == 'awaiting_payment' %}s-awaiting_payment
+            {% elif v.status == 'paid' %}s-paid
+            {% elif v.status == 'in_queue' %}s-in_queue
+            {% elif v.status == 'cancelled' %}s-cancelled
+            {% else %}s-cancelled{% endif %}">
+            {{ v.get_status_display }}
+          </span>
+        </td>
+        <td style="color:var(--muted); font-size:.83rem;">{{ v.created_by.get_full_name|default:v.created_by.username|default:"—" }}</td>
+        <td>
+          <a href="{% url 'patients:visit-detail' v.pk %}" class="btn-view-sm">
+            View
+            <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" class="empty-state">
+          <div class="empty-icon">🗒️</div>
+          <p>No visits on record for this patient.</p>
+          <a href="{% url 'patients:visit-create' %}?patient={{ patient.pk %}" class="btn-visit" style="font-size:.82rem;padding:.42rem .9rem;">
+            Create First Visit
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

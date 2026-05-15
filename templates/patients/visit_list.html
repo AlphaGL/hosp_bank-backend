@@ -2,68 +2,348 @@
 {% block title %}Visits{% endblock %}
 {% block nav_visits %}active{% endblock %}
 
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e0d;
+    --paper: #f7f5f2;
+    --card: #ffffff;
+    --accent: #c8501a;
+    --accent-light: #f4e8e1;
+    --muted: #7a7570;
+    --border: #e5e2dd;
+    --success: #2a7d4f;
+    --success-bg: #e6f4ed;
+    --danger: #c8501a;
+    --danger-bg: #fbeee9;
+    --warning: #b07a10;
+    --warning-bg: #fdf3dc;
+    --info: #1a6da8;
+    --info-bg: #e1eef8;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(15,14,13,.06), 0 4px 16px rgba(15,14,13,.06);
+  }
+
+  body { background: var(--paper); font-family: 'DM Sans', sans-serif; color: var(--ink); }
+
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.75rem;
+  }
+  .page-title {
+    font-family: 'Syne', sans-serif; font-size: 1.75rem;
+    font-weight: 800; letter-spacing: -.02em; margin: 0;
+  }
+  .page-title span { color: var(--accent); }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    display: flex; gap: .6rem; align-items: center; flex-wrap: wrap;
+    padding: .85rem 1rem; background: var(--card);
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); margin-bottom: 1.5rem;
+  }
+  .filter-label {
+    font-family: 'Syne', sans-serif; font-size: .7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+    white-space: nowrap; margin-right: .25rem;
+  }
+  .filter-select {
+    padding: .4rem .85rem; border-radius: 7px; font-family: inherit;
+    font-size: .82rem; border: 1.5px solid var(--border);
+    background: var(--paper); color: var(--ink);
+    transition: border .15s, box-shadow .15s; cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a7570'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 9px center;
+    padding-right: 1.8rem;
+  }
+  .filter-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,80,26,.1); }
+  .filter-date {
+    padding: .4rem .85rem; border-radius: 7px; font-family: inherit;
+    font-size: .82rem; border: 1.5px solid var(--border);
+    background: var(--paper); color: var(--ink);
+    transition: border .15s, box-shadow .15s;
+  }
+  .filter-date:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,80,26,.1); }
+  .filter-divider { width: 1px; height: 20px; background: var(--border); }
+  .btn-clear {
+    padding: .38rem .85rem; border-radius: 7px; font-size: .8rem; font-weight: 500;
+    border: 1.5px solid var(--border); background: transparent; color: var(--muted);
+    text-decoration: none; transition: all .13s; cursor: pointer; font-family: inherit;
+  }
+  .btn-clear:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-count {
+    margin-left: auto; font-size: .8rem; color: var(--muted);
+    font-weight: 500; white-space: nowrap;
+  }
+  .filter-count strong { color: var(--ink); }
+
+  /* ── Table ── */
+  .table-card {
+    background: var(--card); border-radius: 14px;
+    border: 1.5px solid var(--border); overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .table-card table { margin: 0; width: 100%; border-collapse: collapse; }
+  .table-card thead th {
+    background: var(--paper); padding: .75rem 1.1rem;
+    font-family: 'Syne', sans-serif; font-size: .7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+    border-bottom: 1.5px solid var(--border); white-space: nowrap;
+  }
+  .table-card tbody td {
+    padding: .9rem 1.1rem; border-bottom: 1px solid var(--border);
+    font-size: .88rem; vertical-align: middle;
+  }
+  .table-card tbody tr:last-child td { border-bottom: none; }
+  .table-card tbody tr { transition: background .12s; }
+  .table-card tbody tr:hover { background: #faf9f7; }
+  .table-card tbody tr.hidden-row { display: none; }
+
+  /* ── Status badges ── */
+  .status-badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .28rem .75rem; border-radius: 999px;
+    font-size: .73rem; font-weight: 600; letter-spacing: .01em; white-space: nowrap;
+  }
+  .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .s-completed   { background: var(--success-bg); color: var(--success); }
+  .s-completed::before   { background: var(--success); }
+  .s-in_progress { background: #e8f0fd; color: #1a4fa8; }
+  .s-in_progress::before { background: #1a4fa8; }
+  .s-awaiting_payment { background: var(--warning-bg); color: var(--warning); }
+  .s-awaiting_payment::before { background: var(--warning); }
+  .s-paid { background: var(--info-bg); color: var(--info); }
+  .s-paid::before { background: var(--info); }
+  .s-default { background: #f0efee; color: var(--muted); }
+  .s-default::before { background: var(--muted); }
+
+  /* ── Priority ── */
+  .priority-badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .22rem .65rem; border-radius: 5px;
+    font-size: .73rem; font-weight: 600;
+  }
+  .p-emergency { background: var(--danger-bg); color: var(--danger); }
+  .p-normal { background: #f0efee; color: var(--muted); }
+
+  /* ── Patient cell ── */
+  .patient-name { font-weight: 500; }
+  .patient-id {
+    font-family: 'SF Mono','Fira Code', monospace;
+    font-size: .73rem; color: var(--muted);
+  }
+  .patient-link { color: var(--ink); text-decoration: none; }
+  .patient-link:hover { color: var(--accent); }
+
+  /* ── Visit ID ── */
+  .visit-id {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .9rem;
+    color: var(--muted);
+  }
+
+  /* ── Buttons ── */
+  .btn-primary-custom {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: var(--accent); color: #fff;
+    padding: .55rem 1.1rem; border-radius: var(--radius);
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .85rem;
+    border: none; text-decoration: none; transition: opacity .15s, transform .1s;
+    box-shadow: 0 2px 8px rgba(200,80,26,.25);
+  }
+  .btn-primary-custom:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+  .btn-view {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .3rem .75rem; border-radius: 7px; font-size: .78rem; font-weight: 600;
+    border: 1.5px solid var(--border); background: var(--card);
+    color: var(--ink); text-decoration: none; transition: all .13s;
+  }
+  .btn-view:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* ── Empty ── */
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .empty-icon { font-size: 2.2rem; margin-bottom: .75rem; opacity: .35; }
+
+  /* ── Pagination ── */
+  .pagination-wrap { display: flex; justify-content: center; margin-top: 1.5rem; gap: .4rem; }
+  .page-btn {
+    padding: .4rem .9rem; border-radius: 7px; font-size: .82rem; font-weight: 500;
+    border: 1.5px solid var(--border); background: var(--card); color: var(--ink);
+    text-decoration: none; transition: all .12s;
+  }
+  .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .page-btn.current { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  #no-results { display: none; }
+  #no-results.visible { display: table-row; }
+
+  @keyframes rowIn { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform:none; } }
+  .table-card tbody tr { animation: rowIn .2s ease both; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h4 mb-0">Visits</h1>
-  <a href="{% url 'patients:visit-create' %}" class="btn btn-primary">+ New Visit</a>
+<div class="page-header">
+  <h1 class="page-title">Patient <span>Visits</span></h1>
+  <a href="{% url 'patients:visit-create' %}" class="btn-primary-custom">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New Visit
+  </a>
 </div>
 
-<form method="get" class="row g-2 mb-4">
-  <div class="col-auto">{{ filter_form.status }}</div>
-  <div class="col-auto">{{ filter_form.priority }}</div>
-  <div class="col-auto">{{ filter_form.date }}</div>
-  <div class="col-auto">
-    <button type="submit" class="btn btn-sm btn-secondary">Filter</button>
-    <a href="{% url 'patients:visit-list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+{# Auto-filter bar — no submit button #}
+<form method="get" id="filter-form" autocomplete="off">
+  <div class="filter-bar">
+    <span class="filter-label">Filter</span>
+
+    <select name="status" id="filter-status" class="filter-select">
+      <option value="">All Statuses</option>
+      {% for val, label in filter_form.status.field.choices %}
+        {% if val %}<option value="{{ val }}" {% if filter_form.status.value == val %}selected{% endif %}>{{ label }}</option>{% endif %}
+      {% endfor %}
+    </select>
+
+    <select name="priority" id="filter-priority" class="filter-select">
+      <option value="">All Priorities</option>
+      {% for val, label in filter_form.priority.field.choices %}
+        {% if val %}<option value="{{ val }}" {% if filter_form.priority.value == val %}selected{% endif %}>{{ label }}</option>{% endif %}
+      {% endfor %}
+    </select>
+
+    <input type="date" name="date" id="filter-date" class="filter-date"
+           value="{{ filter_form.date.value|default:'' }}">
+
+    <div class="filter-divider"></div>
+
+    <button type="button" id="btn-clear" class="btn-clear">Clear</button>
+
+    <span class="filter-count"><strong id="visible-count">{{ visits|length }}</strong> visit{{ visits|length|pluralize }}</span>
   </div>
 </form>
 
-<div class="table-responsive">
-  <table class="table table-hover align-middle">
-    <thead class="table-light">
-      <tr><th>#</th><th>Patient</th><th>Date</th><th>Priority</th><th>Status</th><th>Created by</th><th></th></tr>
-    </thead>
-    <tbody>
-      {% for v in visits %}
+<div class="table-card">
+  <table>
+    <thead>
       <tr>
-        <td>{{ v.pk }}</td>
+        <th>#</th>
+        <th>Patient</th>
+        <th>Date</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Created by</th>
+        <th style="width:70px"></th>
+      </tr>
+    </thead>
+    <tbody id="visits-tbody">
+      {% for v in visits %}
+      <tr class="visit-row"
+          data-status="{{ v.status }}"
+          data-priority="{{ v.priority }}"
+          data-date="{{ v.visit_date|date:'Y-m-d' }}">
+        <td class="visit-id">#{{ v.pk }}</td>
         <td>
-          <a href="{% url 'patients:patient-detail' v.patient.pk %}">{{ v.patient.full_name }}</a>
-          <div class="text-muted small"><code>{{ v.patient.patient_id }}</code></div>
+          <a href="{% url 'patients:patient-detail' v.patient.pk %}" class="patient-link">
+            <div class="patient-name">{{ v.patient.full_name }}</div>
+            <div class="patient-id">{{ v.patient.patient_id }}</div>
+          </a>
         </td>
-        <td>{{ v.visit_date|date:"d M Y" }}</td>
-        <td><span class="badge {% if v.priority == 'emergency' %}bg-danger{% else %}bg-secondary{% endif %}">{{ v.get_priority_display }}</span></td>
+        <td style="white-space:nowrap; color:var(--muted); font-size:.84rem;">{{ v.visit_date|date:"d M Y" }}</td>
         <td>
-          <span class="badge
-            {% if v.status == 'completed' %}bg-success
-            {% elif v.status == 'in_progress' %}bg-primary
-            {% elif v.status == 'awaiting_payment' %}bg-warning text-dark
-            {% elif v.status == 'paid' %}bg-info
-            {% else %}bg-secondary{% endif %}">
+          <span class="priority-badge {% if v.priority == 'emergency' %}p-emergency{% else %}p-normal{% endif %}">
+            {% if v.priority == 'emergency' %}⚡{% endif %}
+            {{ v.get_priority_display }}
+          </span>
+        </td>
+        <td>
+          <span class="status-badge
+            {% if v.status == 'completed' %}s-completed
+            {% elif v.status == 'in_progress' %}s-in_progress
+            {% elif v.status == 'awaiting_payment' %}s-awaiting_payment
+            {% elif v.status == 'paid' %}s-paid
+            {% else %}s-default{% endif %}">
             {{ v.get_status_display }}
           </span>
         </td>
-        <td>{{ v.created_by.get_full_name|default:v.created_by.username|default:"—" }}</td>
-        <td><a href="{% url 'patients:visit-detail' v.pk %}" class="btn btn-sm btn-outline-primary">View</a></td>
+        <td style="color:var(--muted); font-size:.84rem;">
+          {{ v.created_by.get_full_name|default:v.created_by.username|default:"—" }}
+        </td>
+        <td>
+          <a href="{% url 'patients:visit-detail' v.pk %}" class="btn-view">
+            View
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </td>
       </tr>
       {% empty %}
-      <tr><td colspan="7" class="text-center text-muted py-4">No visits found.</td></tr>
+      <tr><td colspan="7" class="empty-state"><div class="empty-icon">🗒️</div>No visits recorded yet.</td></tr>
       {% endfor %}
+      <tr id="no-results">
+        <td colspan="7" class="empty-state">
+          <div class="empty-icon">🔍</div>
+          No visits match the current filters.
+        </td>
+      </tr>
     </tbody>
   </table>
 </div>
 
 {% if is_paginated %}
-<nav>
-  <ul class="pagination justify-content-center">
-    {% if page_obj.has_previous %}
-      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
-    {% endif %}
-    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
-    {% if page_obj.has_next %}
-      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
-    {% endif %}
-  </ul>
-</nav>
+<div class="pagination-wrap">
+  {% if page_obj.has_previous %}
+    <a class="page-btn" href="?page={{ page_obj.previous_page_number }}">← Previous</a>
+  {% endif %}
+  <span class="page-btn current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a class="page-btn" href="?page={{ page_obj.next_page_number }}">Next →</a>
+  {% endif %}
+</div>
 {% endif %}
+
+<script>
+(function () {
+  const statusSel   = document.getElementById('filter-status');
+  const prioritySel = document.getElementById('filter-priority');
+  const dateInput   = document.getElementById('filter-date');
+  const btnClear    = document.getElementById('btn-clear');
+  const rows        = document.querySelectorAll('.visit-row');
+  const noRes       = document.getElementById('no-results');
+  const countEl     = document.getElementById('visible-count');
+
+  function applyFilters() {
+    const s = statusSel.value;
+    const p = prioritySel.value;
+    const d = dateInput.value;
+    let visible = 0;
+
+    rows.forEach(r => {
+      const match =
+        (!s || r.dataset.status   === s) &&
+        (!p || r.dataset.priority === p) &&
+        (!d || r.dataset.date     === d);
+      r.classList.toggle('hidden-row', !match);
+      if (match) visible++;
+    });
+
+    noRes.classList.toggle('visible', visible === 0);
+    countEl.textContent = visible;
+  }
+
+  statusSel.addEventListener('change', applyFilters);
+  prioritySel.addEventListener('change', applyFilters);
+  dateInput.addEventListener('change', applyFilters);
+
+  btnClear.addEventListener('click', () => {
+    statusSel.value = '';
+    prioritySel.value = '';
+    dateInput.value = '';
+    applyFilters();
+  });
+
+  applyFilters(); // run on load with any server-side pre-selections
+})();
+</script>
 {% endblock %}

@@ -1,53 +1,322 @@
 {% extends "base.html" %}
 {% block title %}Staff{% endblock %}
 
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e0d;
+    --paper: #f7f5f2;
+    --card: #ffffff;
+    --accent: #c8501a;
+    --accent-light: #f4e8e1;
+    --muted: #7a7570;
+    --border: #e5e2dd;
+    --success: #2a7d4f;
+    --success-bg: #e6f4ed;
+    --danger: #c8501a;
+    --warning: #b07a10;
+    --warning-bg: #fdf3dc;
+    --info: #1a6da8;
+    --info-bg: #e1eef8;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(15,14,13,.06), 0 4px 16px rgba(15,14,13,.06);
+    --shadow-lg: 0 8px 40px rgba(15,14,13,.1);
+  }
+
+  body { background: var(--paper); font-family: 'DM Sans', sans-serif; color: var(--ink); }
+
+  /* ── Page header ── */
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.75rem;
+  }
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.75rem; font-weight: 800;
+    letter-spacing: -.02em; margin: 0;
+  }
+  .page-title span { color: var(--accent); }
+
+  /* ── Search bar ── */
+  .search-wrap {
+    position: relative; margin-bottom: 1.5rem;
+  }
+  .search-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); pointer-events: none;
+  }
+  .search-input {
+    width: 100%; max-width: 380px;
+    padding: .6rem 1rem .6rem 2.6rem;
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    background: var(--card); font-family: inherit; font-size: .9rem;
+    color: var(--ink); transition: border .15s, box-shadow .15s;
+    box-shadow: var(--shadow);
+  }
+  .search-input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(200,80,26,.12);
+  }
+  .search-input::placeholder { color: var(--muted); }
+
+  /* ── Stats strip ── */
+  .stats-strip {
+    display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1.75rem;
+  }
+  .stat-chip {
+    display: inline-flex; align-items: center; gap: .45rem;
+    padding: .4rem .85rem; border-radius: 999px; font-size: .8rem;
+    font-weight: 500; border: 1.5px solid var(--border);
+    background: var(--card); color: var(--muted);
+    transition: all .15s; cursor: default;
+  }
+  .stat-chip .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .stat-chip.active { border-color: var(--success); color: var(--success); background: var(--success-bg); }
+  .stat-chip.inactive { border-color: var(--border); }
+  .stat-chip.total { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* ── Table card ── */
+  .table-card {
+    background: var(--card); border-radius: 14px;
+    border: 1.5px solid var(--border); overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .table-card table { margin: 0; width: 100%; border-collapse: collapse; }
+  .table-card thead th {
+    background: var(--paper); padding: .75rem 1.1rem;
+    font-family: 'Syne', sans-serif; font-size: .72rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--muted); border-bottom: 1.5px solid var(--border);
+    white-space: nowrap;
+  }
+  .table-card tbody td {
+    padding: .85rem 1.1rem; border-bottom: 1px solid var(--border);
+    font-size: .88rem; vertical-align: middle;
+  }
+  .table-card tbody tr:last-child td { border-bottom: none; }
+  .table-card tbody tr {
+    transition: background .12s;
+  }
+  .table-card tbody tr:hover { background: #faf9f7; }
+  .table-card tbody tr.hidden-row { display: none; }
+
+  /* ── Badges ── */
+  .badge-pill {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .28rem .7rem; border-radius: 999px;
+    font-size: .75rem; font-weight: 600; letter-spacing: .01em;
+  }
+  .badge-active { background: var(--success-bg); color: var(--success); }
+  .badge-inactive { background: #f0efee; color: var(--muted); }
+
+  /* ── Username code ── */
+  .username-code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: .78rem; background: var(--paper);
+    padding: .15rem .45rem; border-radius: 5px;
+    color: var(--ink); border: 1px solid var(--border);
+  }
+
+  /* ── Role chip ── */
+  .role-chip {
+    display: inline-block; font-size: .75rem; font-weight: 500;
+    padding: .2rem .6rem; border-radius: 5px;
+    background: var(--paper); color: var(--ink); border: 1px solid var(--border);
+  }
+
+  /* ── Buttons ── */
+  .btn-primary-custom {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: var(--accent); color: #fff;
+    padding: .55rem 1.1rem; border-radius: var(--radius);
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .85rem;
+    border: none; text-decoration: none; transition: opacity .15s, transform .1s;
+    box-shadow: 0 2px 8px rgba(200,80,26,.25);
+  }
+  .btn-primary-custom:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+
+  .btn-edit {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .3rem .75rem; border-radius: 7px;
+    font-size: .78rem; font-weight: 600;
+    border: 1.5px solid var(--border); background: var(--card);
+    color: var(--ink); text-decoration: none; transition: all .13s;
+  }
+  .btn-edit:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+  /* ── Empty state ── */
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: .75rem; opacity: .35; }
+
+  /* ── Pagination ── */
+  .pagination-wrap { display: flex; justify-content: center; margin-top: 1.5rem; gap: .4rem; }
+  .page-btn {
+    padding: .4rem .9rem; border-radius: 7px; font-size: .82rem; font-weight: 500;
+    border: 1.5px solid var(--border); background: var(--card); color: var(--ink);
+    text-decoration: none; transition: all .12s;
+  }
+  .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .page-btn.current { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  /* ── No-result row ── */
+  #no-results { display: none; }
+  #no-results.visible { display: table-row; }
+
+  /* fade-in rows */
+  .table-card tbody tr { animation: rowIn .2s ease both; }
+  @keyframes rowIn { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform:none; } }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h4 mb-0">Staff Members</h1>
-  <a href="{% url 'patients:staff-create' %}" class="btn btn-primary">+ Add Staff</a>
+<div class="page-header">
+  <h1 class="page-title">Staff <span>Members</span></h1>
+  <a href="{% url 'patients:staff-create' %}" class="btn-primary-custom">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Add Staff
+  </a>
 </div>
 
-<form method="get" class="d-flex gap-2 mb-4">
-  <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Search name, username, role…" style="max-width:300px">
-  <button type="submit" class="btn btn-sm btn-secondary">Search</button>
-  {% if q %}<a href="{% url 'patients:staff-list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>{% endif %}
+{# Stats strip #}
+<div class="stats-strip" id="stats-strip">
+  <div class="stat-chip total">
+    <span class="dot" style="background:var(--accent)"></span>
+    <span id="stat-total">{{ staff_members|length }}</span> total
+  </div>
+  <div class="stat-chip active">
+    <span class="dot" style="background:var(--success)"></span>
+    <span id="stat-active">—</span> active
+  </div>
+  <div class="stat-chip inactive">
+    <span class="dot" style="background:var(--muted)"></span>
+    <span id="stat-inactive">—</span> inactive
+  </div>
+</div>
+
+{# Live search — no submit button needed #}
+<form method="get" id="search-form" autocomplete="off">
+  <div class="search-wrap">
+    <svg class="search-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" name="q" id="search-input" value="{{ q }}"
+           class="search-input" placeholder="Search name, username, role, department…">
+  </div>
 </form>
 
-<div class="table-responsive">
-  <table class="table table-hover align-middle">
-    <thead class="table-light">
-      <tr><th>Username</th><th>Name</th><th>Role</th><th>Department</th><th>Active</th><th></th></tr>
-    </thead>
-    <tbody>
-      {% for s in staff_members %}
+<div class="table-card">
+  <table>
+    <thead>
       <tr>
-        <td><code>{{ s.username }}</code></td>
-        <td>{{ s.get_full_name }}</td>
-        <td>{{ s.get_role_display }}</td>
-        <td>{{ s.department|default:"—" }}</td>
+        <th>Username</th>
+        <th>Full Name</th>
+        <th>Role</th>
+        <th>Department</th>
+        <th>Status</th>
+        <th style="width:70px"></th>
+      </tr>
+    </thead>
+    <tbody id="staff-tbody">
+      {% for s in staff_members %}
+      <tr class="staff-row"
+          data-search="{{ s.username|lower }} {{ s.get_full_name|lower }} {{ s.get_role_display|lower }} {{ s.department|lower }}">
+        <td><span class="username-code">{{ s.username }}</span></td>
+        <td style="font-weight:500">{{ s.get_full_name }}</td>
+        <td><span class="role-chip">{{ s.get_role_display }}</span></td>
+        <td style="color:var(--muted)">{{ s.department|default:"—" }}</td>
         <td>
           {% if s.is_active %}
-            <span class="badge bg-success">Active</span>
+            <span class="badge-pill badge-active">
+              <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg>
+              Active
+            </span>
           {% else %}
-            <span class="badge bg-secondary">Inactive</span>
+            <span class="badge-pill badge-inactive">
+              <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="4"/></svg>
+              Inactive
+            </span>
           {% endif %}
         </td>
-        <td><a href="{% url 'patients:staff-update' s.pk %}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+        <td>
+          <a href="{% url 'patients:staff-update' s.pk %}" class="btn-edit">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit
+          </a>
+        </td>
       </tr>
       {% empty %}
-      <tr><td colspan="6" class="text-center text-muted py-4">No staff found.</td></tr>
+      <tr><td colspan="6" class="empty-state"><div class="empty-icon">👤</div>No staff found.</td></tr>
       {% endfor %}
+      <tr id="no-results">
+        <td colspan="6" class="empty-state">
+          <div class="empty-icon">🔍</div>
+          No staff match your search.
+        </td>
+      </tr>
     </tbody>
   </table>
 </div>
 
 {% if is_paginated %}
-<nav>
-  <ul class="pagination justify-content-center">
-    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>{% endif %}
-    <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
-    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>{% endif %}
-  </ul>
-</nav>
+<div class="pagination-wrap">
+  {% if page_obj.has_previous %}
+    <a class="page-btn" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">← Previous</a>
+  {% endif %}
+  <span class="page-btn current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a class="page-btn" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}">Next →</a>
+  {% endif %}
+</div>
 {% endif %}
+
+<script>
+(function () {
+  const input = document.getElementById('search-input');
+  const rows  = document.querySelectorAll('.staff-row');
+  const noRes = document.getElementById('no-results');
+  const statActive   = document.getElementById('stat-active');
+  const statInactive = document.getElementById('stat-inactive');
+  const statTotal    = document.getElementById('stat-total');
+
+  // Initial stats count
+  let totalActive = 0, totalInactive = 0;
+  rows.forEach(r => {
+    r.querySelector('.badge-active') ? totalActive++ : totalInactive++;
+  });
+  statActive.textContent   = totalActive;
+  statInactive.textContent = totalInactive;
+  statTotal.textContent    = rows.length;
+
+  function filter() {
+    const q = input.value.toLowerCase().trim();
+    let visible = 0, visActive = 0, visInactive = 0;
+
+    rows.forEach(r => {
+      const match = !q || r.dataset.search.includes(q);
+      r.classList.toggle('hidden-row', !match);
+      if (match) {
+        visible++;
+        r.querySelector('.badge-active') ? visActive++ : visInactive++;
+      }
+    });
+
+    noRes.classList.toggle('visible', visible === 0);
+    statTotal.textContent    = visible;
+    statActive.textContent   = visActive;
+    statInactive.textContent = visInactive;
+  }
+
+  let debounce;
+  input.addEventListener('input', () => {
+    clearTimeout(debounce);
+    debounce = setTimeout(filter, 160);
+  });
+
+  filter(); // run on load in case q is pre-filled
+})();
+</script>
 {% endblock %}

@@ -1,173 +1,340 @@
 {% extends "base.html" %}
 {% block title %}Patients — MediCore HMS{% endblock %}
-{% block page_title %}Patient Records{% endblock %}
 {% block nav_patients %}active{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f0e0d; --paper: #f7f5f2; --card: #ffffff;
+  --accent: #c8501a; --accent-light: #f4e8e1;
+  --muted: #7a7570; --border: #e5e2dd;
+  --success: #2a7d4f; --success-bg: #e6f4ed;
+  --blue: #1a6da8; --blue-bg: #e1eef8;
+  --pink: #be185d; --pink-bg: rgba(236,72,153,.09);
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(15,14,13,.06), 0 4px 16px rgba(15,14,13,.06);
+}
+body { background: var(--paper); font-family: 'DM Sans', sans-serif; color: var(--ink); margin: 0; }
+
+/* ── Page header ── */
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 1.75rem;
+}
+.page-title {
+  font-family: 'Syne', sans-serif; font-size: 1.75rem;
+  font-weight: 800; letter-spacing: -.02em; margin: 0 0 .2rem;
+}
+.page-title span { color: var(--accent); }
+.page-subtitle { font-size: .84rem; color: var(--muted); margin: 0; }
+
+.btn-primary-custom {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: var(--accent); color: #fff;
+  padding: .55rem 1.15rem; border-radius: var(--radius);
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .85rem;
+  border: none; text-decoration: none; white-space: nowrap;
+  transition: opacity .15s, transform .1s;
+  box-shadow: 0 2px 8px rgba(200,80,26,.25);
+}
+.btn-primary-custom:hover { opacity: .88; transform: translateY(-1px); color: #fff; }
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex; gap: .75rem; align-items: center; flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+.search-wrap { position: relative; flex: 1; min-width: 220px; max-width: 380px; }
+.search-icon {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  color: var(--muted); pointer-events: none;
+}
+.search-input {
+  width: 100%; padding: .6rem 1rem .6rem 2.5rem;
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  background: var(--card); font-family: inherit; font-size: .88rem;
+  color: var(--ink); transition: border .15s, box-shadow .15s;
+  box-shadow: var(--shadow); box-sizing: border-box;
+}
+.search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,80,26,.12); }
+.search-input::placeholder { color: var(--muted); }
+
+.gender-filter {
+  padding: .58rem 2rem .58rem .85rem; border-radius: var(--radius);
+  border: 1.5px solid var(--border); background: var(--card);
+  font-family: inherit; font-size: .85rem; color: var(--ink);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a7570'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 9px center;
+  box-shadow: var(--shadow); transition: border .15s;
+  cursor: pointer;
+}
+.gender-filter:focus { outline: none; border-color: var(--accent); }
+
+.result-count {
+  margin-left: auto; font-size: .8rem; color: var(--muted); font-weight: 500;
+  white-space: nowrap;
+}
+.result-count strong { color: var(--ink); }
+
+/* ── Table card ── */
+.table-card {
+  background: var(--card); border-radius: 14px;
+  border: 1.5px solid var(--border); overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.table-card table { margin: 0; width: 100%; border-collapse: collapse; }
+.table-card thead th {
+  background: var(--paper); padding: .72rem 1.1rem;
+  font-family: 'Syne', sans-serif; font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+  border-bottom: 1.5px solid var(--border); white-space: nowrap;
+}
+.table-card tbody td {
+  padding: .88rem 1.1rem; border-bottom: 1px solid var(--border);
+  font-size: .87rem; vertical-align: middle;
+}
+.table-card tbody tr:last-child td { border-bottom: none; }
+.table-card tbody tr { transition: background .12s; cursor: pointer; }
+.table-card tbody tr:hover { background: #faf9f7; }
+.table-card tbody tr.hidden-row { display: none; }
+
+/* ── Patient avatar ── */
+.pat-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent) 0%, #e07a50 100%);
+  display: grid; place-items: center;
+  font-family: 'Syne', sans-serif; font-size: .72rem; font-weight: 800;
+  color: #fff; letter-spacing: .02em;
+  box-shadow: 0 2px 6px rgba(200,80,26,.25);
+}
+.pat-name-cell { display: flex; align-items: center; gap: .65rem; }
+.pat-name { font-weight: 600; }
+
+/* ── PID chip ── */
+.pid-chip {
+  display: inline-block;
+  background: var(--blue-bg); color: var(--blue);
+  padding: .18rem .55rem; border-radius: 5px;
+  font-family: 'SF Mono','Fira Code',monospace; font-size: .73rem; font-weight: 700;
+  letter-spacing: .02em; border: 1px solid #c2d8ee;
+}
+
+/* ── Gender badges ── */
+.gender-badge {
+  display: inline-block; padding: .22rem .6rem; border-radius: 5px;
+  font-size: .73rem; font-weight: 600;
+}
+.g-male   { background: var(--blue-bg); color: var(--blue); }
+.g-female { background: var(--pink-bg); color: var(--pink); }
+.g-other  { background: #f0efee; color: var(--muted); }
+
+/* ── Phone ── */
+.phone-mono {
+  font-family: 'SF Mono','Fira Code',monospace;
+  font-size: .78rem; color: var(--muted);
+}
+
+/* ── Action buttons ── */
+.btn-row { display: flex; gap: .4rem; }
+.btn-ghost-sm {
+  display: inline-flex; align-items: center; gap: .25rem;
+  padding: .28rem .7rem; border-radius: 6px; font-size: .76rem; font-weight: 600;
+  border: 1.5px solid var(--border); background: var(--card);
+  color: var(--ink); text-decoration: none; transition: all .13s;
+  white-space: nowrap;
+}
+.btn-ghost-sm:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.btn-ghost-sm.edit:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+
+/* ── Empty state ── */
+.empty-state { text-align: center; padding: 3.5rem 1rem; color: var(--muted); }
+.empty-icon { font-size: 2.4rem; opacity: .3; margin-bottom: .75rem; }
+.empty-state p { font-size: .88rem; margin: 0 0 1rem; }
+
+/* ── Pagination ── */
+.pagination-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .9rem 1.2rem; border-top: 1.5px solid var(--border);
+  flex-wrap: wrap; gap: .5rem;
+}
+.pagination-info { font-size: .8rem; color: var(--muted); }
+.pagination-btns { display: flex; gap: .4rem; }
+.page-btn {
+  padding: .38rem .88rem; border-radius: 7px; font-size: .8rem; font-weight: 500;
+  border: 1.5px solid var(--border); background: var(--card); color: var(--ink);
+  text-decoration: none; transition: all .12s;
+}
+.page-btn:hover { border-color: var(--accent); color: var(--accent); }
+.page-btn.current { background: var(--ink); color: #fff; border-color: var(--ink); cursor: default; }
+
+#no-results { display: none; }
+#no-results.visible { display: table-row; }
+
+@keyframes rowIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+.table-card tbody tr { animation: rowIn .18s ease both; }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <div>
-        <h1 class="page-title">Patient Records</h1>
-        <p class="page-subtitle">Search and manage all registered patients.</p>
-    </div>
-    <div class="page-header-actions">
-        <a href="{% url 'patients:patient-create' %}" class="btn btn-primary">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-            Register Patient
-        </a>
-    </div>
+  <div>
+    <h1 class="page-title">Patient <span>Records</span></h1>
+    <p class="page-subtitle">Search and manage all registered patients.</p>
+  </div>
+  <a href="{% url 'patients:patient-create' %}" class="btn-primary-custom">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Register Patient
+  </a>
 </div>
 
-<!-- SEARCH & FILTER TOOLBAR -->
+{# ── Live toolbar — no submit needed ── #}
 <div class="toolbar">
-    <form method="get" style="display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap;">
-        <div class="search-bar">
-            <svg class="search-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
-            {{ search_form.q }}
-        </div>
-        <button type="submit" class="btn btn-primary btn-sm">Search</button>
-        {% if request.GET.q %}
-        <a href="{% url 'patients:patient-list' %}" class="btn btn-ghost btn-sm">Clear</a>
-        {% endif %}
-    </form>
+  <div class="search-wrap">
+    <svg class="search-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="text" id="search-input" class="search-input"
+           placeholder="Search name, ID, phone, email…"
+           value="{{ request.GET.q|default:'' }}">
+  </div>
+
+  <select id="gender-filter" class="gender-filter">
+    <option value="">All Genders</option>
+    <option value="m">Male</option>
+    <option value="f">Female</option>
+    <option value="other">Other</option>
+  </select>
+
+  <span class="result-count"><strong id="count-display">{{ patients|length }}</strong> patient{{ patients|length|pluralize }}</span>
 </div>
 
-{% if request.GET.q %}
-<p style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
-    Results for <strong style="color:var(--text-primary)">"{{ request.GET.q }}"</strong>
-    — {{ page_obj.paginator.count }} patient{{ page_obj.paginator.count|pluralize }} found
-</p>
-{% endif %}
+<div class="table-card">
+  <table>
+    <thead>
+      <tr>
+        <th>Patient ID</th>
+        <th>Name</th>
+        <th>Age</th>
+        <th>Gender</th>
+        <th>Phone</th>
+        <th>Registered</th>
+        <th>Registered By</th>
+        <th style="width:100px"></th>
+      </tr>
+    </thead>
+    <tbody id="patient-tbody">
+      {% for patient in patients %}
+      <tr class="patient-row"
+          data-search="{{ patient.patient_id|lower }} {{ patient.full_name|lower }} {{ patient.phone|lower }} {{ patient.email|lower|default:'' }}"
+          data-gender="{{ patient.gender|lower }}"
+          data-href="{% url 'patients:patient-detail' patient.pk %}">
+        <td><span class="pid-chip">{{ patient.patient_id }}</span></td>
+        <td>
+          <div class="pat-name-cell">
+            <div class="pat-avatar">{{ patient.first_name|first|upper }}{{ patient.last_name|first|upper }}</div>
+            <span class="pat-name">{{ patient.full_name }}</span>
+          </div>
+        </td>
+        <td><span style="font-weight:500;">{{ patient.age }}</span><span style="color:var(--muted); font-size:.8rem;"> yrs</span></td>
+        <td>
+          {% if patient.gender == 'M' %}
+            <span class="gender-badge g-male">Male</span>
+          {% elif patient.gender == 'F' %}
+            <span class="gender-badge g-female">Female</span>
+          {% else %}
+            <span class="gender-badge g-other">Other</span>
+          {% endif %}
+        </td>
+        <td><span class="phone-mono">{{ patient.phone }}</span></td>
+        <td style="color:var(--muted); font-size:.83rem;">{{ patient.created_at|date:"d M Y" }}</td>
+        <td style="color:var(--muted); font-size:.83rem;">{{ patient.registered_by.get_full_name|default:"—" }}</td>
+        <td>
+          <div class="btn-row">
+            <a href="{% url 'patients:patient-detail' patient.pk %}" class="btn-ghost-sm" onclick="event.stopPropagation()">View</a>
+            <a href="{% url 'patients:patient-update' patient.pk %}" class="btn-ghost-sm edit" onclick="event.stopPropagation()">Edit</a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="8" class="empty-state">
+          <div class="empty-icon">👥</div>
+          <p>No patients registered yet.</p>
+          <a href="{% url 'patients:patient-create' %}" class="btn-primary-custom" style="font-size:.82rem;padding:.42rem .9rem;">Register First Patient</a>
+        </td>
+      </tr>
+      {% endfor %}
+      <tr id="no-results">
+        <td colspan="8" class="empty-state">
+          <div class="empty-icon">🔍</div>
+          <p>No patients match your search.</p>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-<!-- TABLE -->
-<div class="table-wrap">
-    <table>
-        <thead>
-            <tr>
-                <th>Patient ID</th>
-                <th>Name</th>
-                <th>Age</th>
-                <th>Gender</th>
-                <th>Phone</th>
-                <th>Registered</th>
-                <th>Registered By</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for patient in patients %}
-            <tr class="clickable-row" data-href="{% url 'patients:patient-detail' patient.pk %}" style="cursor:pointer;">
-                <td>
-                    <span class="pid-chip">{{ patient.patient_id }}</span>
-                </td>
-                <td>
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <div class="row-avatar">{{ patient.first_name|first|upper }}{{ patient.last_name|first|upper }}</div>
-                        <span style="font-weight:600;">{{ patient.full_name }}</span>
-                    </div>
-                </td>
-                <td>{{ patient.age }}<span style="color:var(--text-muted);"> yrs</span></td>
-                <td>
-                    {% if patient.gender == 'M' %}
-                        <span class="badge" style="background:var(--blue-light);color:var(--blue-dim);">Male</span>
-                    {% elif patient.gender == 'F' %}
-                        <span class="badge" style="background:rgba(236,72,153,0.1);color:#be185d;">Female</span>
-                    {% else %}
-                        <span class="badge badge-registered">Other</span>
-                    {% endif %}
-                </td>
-                <td style="color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:12.5px;">{{ patient.phone }}</td>
-                <td style="color:var(--text-muted);">{{ patient.created_at|date:"M d, Y" }}</td>
-                <td style="color:var(--text-secondary);">{{ patient.registered_by.get_full_name|default:"—" }}</td>
-                <td>
-                    <div style="display:flex;gap:6px;">
-                        <a href="{% url 'patients:patient-detail' patient.pk %}" class="btn btn-ghost btn-sm">View</a>
-                        <a href="{% url 'patients:patient-update' patient.pk %}" class="btn btn-ghost btn-sm">Edit</a>
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="8">
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                        </div>
-                        <p>No patients found{% if request.GET.q %} matching "{{ request.GET.q }}"{% endif %}.</p>
-                        <a href="{% url 'patients:patient-create' %}" class="btn btn-primary btn-sm">Register First Patient</a>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    {% if is_paginated %}
-    <div class="pagination-row">
-        <span class="pagination-info">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-            &nbsp;·&nbsp; {{ page_obj.paginator.count }} total
-        </span>
-        <div style="display:flex;gap:8px;">
-            {% if page_obj.has_previous %}
-            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.previous_page_number }}" class="btn btn-ghost btn-sm">← Previous</a>
-            {% endif %}
-            {% if page_obj.has_next %}
-            <a href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.next_page_number }}" class="btn btn-ghost btn-sm">Next →</a>
-            {% endif %}
-        </div>
+  {% if is_paginated %}
+  <div class="pagination-bar">
+    <span class="pagination-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} total</span>
+    <div class="pagination-btns">
+      {% if page_obj.has_previous %}
+        <a class="page-btn" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.previous_page_number }}">← Previous</a>
+      {% endif %}
+      <span class="page-btn current">{{ page_obj.number }}</span>
+      {% if page_obj.has_next %}
+        <a class="page-btn" href="?{% if request.GET.q %}q={{ request.GET.q }}&{% endif %}page={{ page_obj.next_page_number }}">Next →</a>
+      {% endif %}
     </div>
-    {% endif %}
+  </div>
+  {% endif %}
 </div>
-
-<style>
-.pid-chip {
-    display:inline-block;
-    background:var(--blue-soft);
-    color:var(--blue);
-    padding:3px 9px;
-    border-radius:6px;
-    font-size:12px;
-    font-weight:700;
-    font-family:'JetBrains Mono',monospace;
-    letter-spacing:0.3px;
-}
-.row-avatar {
-    width:32px;height:32px;
-    background:linear-gradient(135deg,var(--blue) 0%,var(--teal) 100%);
-    border-radius:50%;
-    display:grid;place-items:center;
-    font-size:11px;font-weight:700;color:white;flex-shrink:0;
-}
-.pagination-row {
-    display:flex;align-items:center;justify-content:space-between;
-    padding:14px 20px;
-    border-top:1px solid var(--border-light);
-}
-.pagination-info { font-size:12.5px; color:var(--text-muted); }
-
-.empty-state {
-    display:flex;flex-direction:column;align-items:center;gap:12px;
-    padding:48px 20px;
-    color:var(--text-muted);
-}
-.empty-icon {
-    width:52px;height:52px;
-    background:var(--surface-2);border-radius:50%;
-    display:grid;place-items:center;
-}
-.empty-icon svg { width:26px;height:26px;fill:var(--text-light); }
-.empty-state p { font-size:14px; color:var(--text-muted); }
-</style>
 
 <script>
-document.querySelectorAll('.clickable-row').forEach(row => {
-    row.addEventListener('click', function(e) {
-        if (!e.target.closest('a') && !e.target.closest('button')) {
-            window.location = this.dataset.href;
-        }
+(function () {
+  const searchInput  = document.getElementById('search-input');
+  const genderFilter = document.getElementById('gender-filter');
+  const rows         = document.querySelectorAll('.patient-row');
+  const noResults    = document.getElementById('no-results');
+  const countEl      = document.getElementById('count-display');
+
+  // Make rows clickable
+  rows.forEach(row => {
+    row.addEventListener('click', function (e) {
+      if (!e.target.closest('a') && !e.target.closest('button')) {
+        window.location = this.dataset.href;
+      }
     });
-});
+  });
+
+  function filter() {
+    const q = searchInput.value.toLowerCase().trim();
+    const g = genderFilter.value.toLowerCase();
+    let visible = 0;
+
+    rows.forEach(row => {
+      const matchSearch = !q || row.dataset.search.includes(q);
+      const rowGender   = row.dataset.gender;
+      const matchGender = !g
+        || (g === 'm' && rowGender === 'm')
+        || (g === 'f' && rowGender === 'f')
+        || (g === 'other' && rowGender !== 'm' && rowGender !== 'f');
+
+      const show = matchSearch && matchGender;
+      row.classList.toggle('hidden-row', !show);
+      if (show) visible++;
+    });
+
+    noResults.classList.toggle('visible', visible === 0 && rows.length > 0);
+    countEl.textContent = visible;
+  }
+
+  let timer;
+  searchInput.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(filter, 160); });
+  genderFilter.addEventListener('change', filter);
+
+  filter();
+})();
 </script>
 {% endblock %}

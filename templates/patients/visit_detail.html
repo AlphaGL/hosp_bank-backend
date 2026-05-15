@@ -2,121 +2,305 @@
 {% block title %}Visit #{{ visit.pk }}{% endblock %}
 {% block nav_visits %}active{% endblock %}
 
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e0d;
+    --paper: #f7f5f2;
+    --card: #ffffff;
+    --accent: #c8501a;
+    --accent-light: #f4e8e1;
+    --muted: #7a7570;
+    --border: #e5e2dd;
+    --success: #2a7d4f; --success-bg: #e6f4ed;
+    --warning: #b07a10; --warning-bg: #fdf3dc;
+    --info: #1a6da8;   --info-bg: #e1eef8;
+    --danger: #c8501a; --danger-bg: #fbeee9;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(15,14,13,.06), 0 4px 16px rgba(15,14,13,.06);
+  }
+  body { background: var(--paper); font-family: 'DM Sans', sans-serif; color: var(--ink); }
+
+  /* ── Top bar ── */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1.75rem; flex-wrap: wrap; gap: .75rem;
+  }
+  .visit-heading {
+    display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+  }
+  .visit-number {
+    font-family: 'Syne', sans-serif; font-size: 1.7rem;
+    font-weight: 800; letter-spacing: -.02em;
+  }
+  .visit-number span { color: var(--accent); }
+
+  .status-badge {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .32rem .85rem; border-radius: 999px;
+    font-size: .76rem; font-weight: 600; letter-spacing: .01em;
+  }
+  .status-badge::before { content:''; width:7px; height:7px; border-radius:50%; display:inline-block; }
+  .s-completed       { background:var(--success-bg); color:var(--success); }
+  .s-completed::before { background:var(--success); }
+  .s-in_progress     { background:#e8f0fd; color:#1a4fa8; }
+  .s-in_progress::before { background:#1a4fa8; }
+  .s-awaiting_payment{ background:var(--warning-bg); color:var(--warning); }
+  .s-awaiting_payment::before{ background:var(--warning); }
+  .s-paid            { background:var(--info-bg); color:var(--info); }
+  .s-paid::before    { background:var(--info); }
+  .s-default         { background:#f0efee; color:var(--muted); }
+  .s-default::before { background:var(--muted); }
+
+  .btn-back {
+    display: inline-flex; align-items: center; gap: .35rem;
+    padding: .42rem 1rem; border-radius: 8px; font-size: .82rem; font-weight: 500;
+    border: 1.5px solid var(--border); background: var(--card);
+    color: var(--muted); text-decoration: none; transition: all .13s;
+  }
+  .btn-back:hover { border-color: var(--ink); color: var(--ink); }
+
+  /* ── Alerts ── */
+  .alert-custom {
+    padding: .75rem 1.1rem; border-radius: var(--radius);
+    margin-bottom: 1rem; font-size: .88rem; display: flex;
+    align-items: flex-start; gap: .6rem; position: relative;
+  }
+  .alert-success { background: var(--success-bg); color: var(--success); border: 1px solid #b2d9c2; }
+  .alert-error, .alert-danger   { background: var(--danger-bg); color: var(--danger); border: 1px solid #f0c4b2; }
+  .alert-info    { background: var(--info-bg); color: var(--info); border: 1px solid #b2d0e8; }
+  .alert-close {
+    margin-left: auto; background: none; border: none; cursor: pointer;
+    color: inherit; opacity: .6; font-size: 1rem; padding: 0; line-height: 1;
+  }
+
+  /* ── Grid cards ── */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  @media (max-width: 767px) { .detail-grid { grid-template-columns: 1fr; } }
+
+  .info-card {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
+  }
+  .info-card.full-width { grid-column: 1 / -1; }
+
+  .card-header {
+    padding: .75rem 1.2rem;
+    background: var(--paper); border-bottom: 1.5px solid var(--border);
+    font-family: 'Syne', sans-serif; font-size: .78rem;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--muted); display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* ── Definition list ── */
+  .info-dl { display: grid; grid-template-columns: 130px 1fr; gap: 0; }
+  .info-dl dt, .info-dl dd {
+    padding: .7rem 1.2rem; margin: 0;
+    border-bottom: 1px solid var(--border); font-size: .87rem;
+  }
+  .info-dl dt { color: var(--muted); font-weight: 500; font-size: .82rem; }
+  .info-dl dd { font-weight: 400; }
+  .info-dl dt:last-of-type, .info-dl dd:last-of-type { border-bottom: none; }
+
+  .patient-link { color: var(--ink); text-decoration: none; font-weight: 600; }
+  .patient-link:hover { color: var(--accent); }
+  .patient-id-code {
+    font-family: 'SF Mono','Fira Code',monospace; font-size: .73rem;
+    color: var(--muted); display: block; margin-top: 2px;
+  }
+
+  /* ── Priority badge ── */
+  .priority-badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .22rem .65rem; border-radius: 5px;
+    font-size: .74rem; font-weight: 600;
+  }
+  .p-emergency { background: var(--danger-bg); color: var(--danger); }
+  .p-normal    { background: #f0efee; color: var(--muted); }
+
+  /* ── Services table ── */
+  .services-table { width: 100%; border-collapse: collapse; }
+  .services-table th {
+    padding: .6rem 1.2rem; text-align: left;
+    font-family: 'Syne', sans-serif; font-size: .7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .07em; color: var(--muted);
+    background: var(--paper); border-bottom: 1.5px solid var(--border);
+  }
+  .services-table td { padding: .75rem 1.2rem; border-bottom: 1px solid var(--border); font-size: .87rem; }
+  .services-table tr:last-child td { border-bottom: none; }
+  .services-table tfoot td, .services-table tfoot th {
+    padding: .75rem 1.2rem; background: var(--paper);
+    border-top: 1.5px solid var(--border); font-weight: 700;
+  }
+  .total-amount { font-family: 'Syne', sans-serif; font-size: 1rem; color: var(--ink); }
+
+  .btn-add-service {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .28rem .7rem; border-radius: 6px; font-size: .75rem; font-weight: 600;
+    border: 1.5px solid var(--accent); color: var(--accent); background: var(--accent-light);
+    text-decoration: none; transition: all .13s;
+  }
+  .btn-add-service:hover { background: var(--accent); color: #fff; }
+
+  /* ── Status update card ── */
+  .status-update-card {
+    grid-column: 1 / -1;
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
+  }
+  .status-update-card .card-header { background: var(--ink); color: #fff; border-bottom-color: rgba(255,255,255,.1); }
+  .status-update-body { padding: 1.2rem; display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; }
+  .status-update-body label { font-size: .8rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: .35rem; }
+  .status-select-wrap select {
+    padding: .5rem 2rem .5rem .85rem; border-radius: 8px; font-family: inherit;
+    font-size: .88rem; border: 1.5px solid var(--border);
+    background: var(--paper); color: var(--ink);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a7570'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 9px center;
+    transition: border .15s;
+  }
+  .status-select-wrap select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,80,26,.1); }
+  .btn-update {
+    padding: .52rem 1.25rem; border-radius: 8px;
+    background: var(--accent); color: #fff; border: none;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .85rem;
+    cursor: pointer; transition: opacity .15s; box-shadow: 0 2px 8px rgba(200,80,26,.22);
+  }
+  .btn-update:hover { opacity: .88; }
+
+  /* ── Empty services ── */
+  .services-empty { text-align: center; padding: 2.5rem 1rem; color: var(--muted); }
+  .services-empty-icon { font-size: 1.8rem; opacity: .3; margin-bottom: .5rem; }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  .info-card { animation: fadeUp .25s ease both; }
+  .info-card:nth-child(2) { animation-delay: .05s; }
+  .status-update-card { animation: fadeUp .3s ease .08s both; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h4 mb-0">
-    Visit #{{ visit.pk }}
-    <span class="badge ms-2
-      {% if visit.status == 'completed' %}bg-success
-      {% elif visit.status == 'in_progress' %}bg-primary
-      {% elif visit.status == 'awaiting_payment' %}bg-warning text-dark
-      {% elif visit.status == 'paid' %}bg-info
-      {% else %}bg-secondary{% endif %}">
+<div class="top-bar">
+  <div class="visit-heading">
+    <h1 class="visit-number">Visit <span>#{{ visit.pk }}</span></h1>
+    <span class="status-badge
+      {% if visit.status == 'completed' %}s-completed
+      {% elif visit.status == 'in_progress' %}s-in_progress
+      {% elif visit.status == 'awaiting_payment' %}s-awaiting_payment
+      {% elif visit.status == 'paid' %}s-paid
+      {% else %}s-default{% endif %}">
       {{ visit.get_status_display }}
     </span>
-  </h1>
-  <a href="{% url 'patients:visit-list' %}" class="btn btn-sm btn-outline-secondary">← Back</a>
+  </div>
+  <a href="{% url 'patients:visit-list' %}" class="btn-back">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to Visits
+  </a>
 </div>
 
 {% if messages %}
   {% for m in messages %}
-    <div class="alert alert-{{ m.tags }} alert-dismissible fade show">{{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    <div class="alert-custom alert-{{ m.tags }}">
+      {{ m }}
+      <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
+    </div>
   {% endfor %}
 {% endif %}
 
-<div class="row g-4">
+<div class="detail-grid">
 
-  <div class="col-md-6">
-    <div class="card h-100">
-      <div class="card-header fw-semibold">Visit Info</div>
-      <div class="card-body">
-        <dl class="row mb-0">
-          <dt class="col-5">Patient</dt>
-          <dd class="col-7">
-            <a href="{% url 'patients:patient-detail' visit.patient.pk %}">{{ visit.patient.full_name }}</a>
-            <div class="text-muted small"><code>{{ visit.patient.patient_id }}</code></div>
-          </dd>
-          <dt class="col-5">Date</dt>
-          <dd class="col-7">{{ visit.visit_date|date:"d M Y" }}</dd>
-          <dt class="col-5">Priority</dt>
-          <dd class="col-7">
-            <span class="badge {% if visit.priority == 'emergency' %}bg-danger{% else %}bg-secondary{% endif %}">
-              {{ visit.get_priority_display }}
-            </span>
-          </dd>
-          <dt class="col-5">Created by</dt>
-          <dd class="col-7">{{ visit.created_by.get_full_name|default:visit.created_by.username|default:"—" }}</dd>
-          <dt class="col-5">Created at</dt>
-          <dd class="col-7">{{ visit.created_at|date:"d M Y H:i" }}</dd>
-          {% if visit.notes %}
-          <dt class="col-5">Notes</dt>
-          <dd class="col-7">{{ visit.notes }}</dd>
-          {% endif %}
-        </dl>
-      </div>
+  {# ── Visit Info ── #}
+  <div class="info-card">
+    <div class="card-header">
+      <span>Visit Info</span>
     </div>
+    <dl class="info-dl">
+      <dt>Patient</dt>
+      <dd>
+        <a href="{% url 'patients:patient-detail' visit.patient.pk %}" class="patient-link">{{ visit.patient.full_name }}</a>
+        <span class="patient-id-code">{{ visit.patient.patient_id }}</span>
+      </dd>
+      <dt>Date</dt>
+      <dd>{{ visit.visit_date|date:"d M Y" }}</dd>
+      <dt>Priority</dt>
+      <dd>
+        <span class="priority-badge {% if visit.priority == 'emergency' %}p-emergency{% else %}p-normal{% endif %}">
+          {% if visit.priority == 'emergency' %}⚡{% endif %}
+          {{ visit.get_priority_display }}
+        </span>
+      </dd>
+      <dt>Created by</dt>
+      <dd>{{ visit.created_by.get_full_name|default:visit.created_by.username|default:"—" }}</dd>
+      <dt>Created at</dt>
+      <dd style="color:var(--muted); font-size:.84rem;">{{ visit.created_at|date:"d M Y H:i" }}</dd>
+      {% if visit.notes %}
+      <dt>Notes</dt>
+      <dd style="white-space:pre-line;">{{ visit.notes }}</dd>
+      {% endif %}
+    </dl>
   </div>
 
-{# ── Services ── #}
-<div class="col-md-6">
-  <div class="card h-100">
-    <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-      Services
-      <a href="{% url 'services:visit-service-create' %}?visit={{ visit.pk }}" class="btn btn-sm btn-outline-primary">
-        + Add Service
+  {# ── Services ── #}
+  <div class="info-card">
+    <div class="card-header">
+      <span>Services</span>
+      <a href="{% url 'services:visit-service-create' %}?visit={{ visit.pk }}" class="btn-add-service">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Service
       </a>
     </div>
-    <div class="card-body p-0">
-      <table class="table table-sm mb-0">
-        <thead class="table-light">
-          <tr><th>Service</th><th class="text-end">Price</th></tr>
-        </thead>
-        <tbody>
-          {% for vs in services %}
-          <tr>
-            <td>{{ vs.service.name }}</td>
-            <td class="text-end">{{ vs.price_at_booking }}</td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="2" class="text-muted text-center py-3">
-              No services added yet.<br>
-              <a href="{% url 'services:visit-service-create' %}?visit={{ visit.pk }}" class="btn btn-sm btn-primary mt-2">
-                + Add Service
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-        {% if services %}
-        <tfoot class="table-light">
-          <tr>
-            <th>Total</th>
-            <th class="text-end">
-              {{ services_total }}
-            </th>
-          </tr>
-        </tfoot>
-        {% endif %}
-      </table>
-    </div>
-  </div>
-</div>
 
-  {# Update status — replaces VisitViewSet.update_status() custom action #}
-  <div class="col-12">
-    <div class="card border-primary">
-      <div class="card-header bg-primary text-white fw-semibold">Update Status</div>
-      <div class="card-body">
-        <form method="post" action="{% url 'patients:visit-update-status' visit.pk %}" class="d-flex gap-3 align-items-end">
-          {% csrf_token %}
-          <div>
-            <label class="form-label mb-1">New Status</label>
-            {{ status_form.status }}
-          </div>
-          <button type="submit" class="btn btn-primary">Update</button>
-        </form>
-      </div>
+    {% if services %}
+    <table class="services-table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th style="text-align:right">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for vs in services %}
+        <tr>
+          <td>{{ vs.service.name }}</td>
+          <td style="text-align:right; font-variant-numeric:tabular-nums; font-weight:500;">{{ vs.price_at_booking }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td style="font-weight:600; color:var(--muted); font-size:.82rem; text-transform:uppercase; letter-spacing:.05em;">Total</td>
+          <td style="text-align:right"><span class="total-amount">{{ services_total }}</span></td>
+        </tr>
+      </tfoot>
+    </table>
+    {% else %}
+    <div class="services-empty">
+      <div class="services-empty-icon">🩺</div>
+      <p style="margin:.25rem 0 .75rem; font-size:.88rem;">No services added yet.</p>
+      <a href="{% url 'services:visit-service-create' %}?visit={{ visit.pk }}" class="btn-add-service">
+        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add First Service
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  {# ── Update Status ── #}
+  <div class="status-update-card">
+    <div class="card-header">
+      <span>Update Status</span>
+    </div>
+    <div class="status-update-body">
+      <form method="post" action="{% url 'patients:visit-update-status' visit.pk %}" style="display:flex; gap:.85rem; align-items:flex-end; flex-wrap:wrap;">
+        {% csrf_token %}
+        <div class="status-select-wrap">
+          <label>New Status</label>
+          {{ status_form.status }}
+        </div>
+        <button type="submit" class="btn-update">Apply Update</button>
+      </form>
     </div>
   </div>
 
