@@ -1,0 +1,115 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}Dispense Stock — Inventory{% endblock %}
+{% block page_title %}Dispense Stock{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Dispense Stock</h1>
+        <div class="breadcrumb"><a href="{% url 'inventory:dashboard' %}">Inventory</a> › Dispense</div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+    <div class="form-card" style="max-width:100%;">
+        <p style="color:var(--text-secondary);font-size:13.5px;margin-bottom:20px;padding:12px 16px;background:var(--warn-light);border-radius:var(--radius);border-left:4px solid var(--warn);">
+            Dispensing stock reduces on-hand quantity and creates an immutable ledger entry.
+            If no batch is selected, the oldest non-expired batch (FEFO) is used automatically.
+        </p>
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div style="margin-bottom:20px;padding:12px 16px;background:var(--danger-light);border:1px solid var(--danger);border-radius:var(--radius);color:var(--danger);font-size:13px;">
+                {{ form.non_field_errors }}
+            </div>
+            {% endif %}
+
+            <div class="form-row">
+                <label for="{{ form.item.id_for_label }}">Item *</label>
+                {{ form.item }}
+                {% if form.item.errors %}<ul class="errorlist">{% for e in form.item.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-cols">
+                <div class="form-row">
+                    <label for="{{ form.quantity.id_for_label }}">Quantity *</label>
+                    {{ form.quantity }}
+                    {% if form.quantity.errors %}<ul class="errorlist">{% for e in form.quantity.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+                <div class="form-row">
+                    <label for="{{ form.batch.id_for_label }}">Batch (optional)</label>
+                    {{ form.batch }}
+                    <div class="help-text">{{ form.batch.help_text }}</div>
+                </div>
+            </div>
+            <div class="form-cols">
+                <div class="form-row">
+                    <label for="{{ form.department.id_for_label }}">Department</label>
+                    {{ form.department }}
+                </div>
+                <div class="form-row">
+                    <label for="{{ form.reference.id_for_label }}">Reference</label>
+                    {{ form.reference }}
+                    <div class="help-text">{{ form.reference.help_text }}</div>
+                </div>
+            </div>
+            <div class="form-row">
+                <label for="{{ form.notes.id_for_label }}">Notes</label>
+                {{ form.notes }}
+            </div>
+
+            <div style="display:flex;gap:12px;margin-top:8px;">
+                <button type="submit" class="btn btn-primary">Dispense</button>
+                <a href="{% url 'inventory:dashboard' %}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Quick Tips -->
+    <div>
+        <div class="detail-card">
+            <h2>Quick Guide</h2>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <div style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="width:28px;height:28px;background:var(--blue-light);border-radius:50%;display:grid;place-items:center;flex-shrink:0;">
+                        <span style="font-size:13px;font-weight:700;color:var(--blue);">1</span>
+                    </div>
+                    <div>
+                        <div style="font-weight:600;font-size:13.5px;">Select the item</div>
+                        <div style="color:var(--text-muted);font-size:12.5px;">Choose from active consumable items in the catalogue.</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="width:28px;height:28px;background:var(--blue-light);border-radius:50%;display:grid;place-items:center;flex-shrink:0;">
+                        <span style="font-size:13px;font-weight:700;color:var(--blue);">2</span>
+                    </div>
+                    <div>
+                        <div style="font-weight:600;font-size:13.5px;">Enter the quantity</div>
+                        <div style="color:var(--text-muted);font-size:12.5px;">Must not exceed on-hand stock. The system will alert you if insufficient.</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="width:28px;height:28px;background:var(--blue-light);border-radius:50%;display:grid;place-items:center;flex-shrink:0;">
+                        <span style="font-size:13px;font-weight:700;color:var(--blue);">3</span>
+                    </div>
+                    <div>
+                        <div style="font-weight:600;font-size:13.5px;">Add a reference (optional)</div>
+                        <div style="color:var(--text-muted);font-size:12.5px;">Enter a Visit ID, ward reference, or procedure code for audit trail.</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="width:28px;height:28px;background:var(--warn-light);border-radius:50%;display:grid;place-items:center;flex-shrink:0;">
+                        <span style="font-size:13px;font-weight:700;color:var(--warn);">!</span>
+                    </div>
+                    <div>
+                        <div style="font-weight:600;font-size:13.5px;color:var(--warn);">FEFO applied automatically</div>
+                        <div style="color:var(--text-muted);font-size:12.5px;">Stock is pulled from the earliest-expiring batch if you don't select one.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

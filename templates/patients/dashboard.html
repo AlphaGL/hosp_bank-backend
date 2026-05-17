@@ -21,7 +21,9 @@
     </div>
 </div>
 
-<!-- STAT CARDS -->
+<!-- ═══════════════════════════════════════════════════
+     MAIN STAT CARDS (Patients + Visits)
+════════════════════════════════════════════════════ -->
 <div class="stats-grid">
     <div class="stat-card stat-blue">
         <div class="stat-icon">
@@ -68,7 +70,190 @@
     </div>
 </div>
 
-<!-- RECENT VISITS -->
+<!-- ═══════════════════════════════════════════════════
+     INVENTORY ALERT BANNER  (shown only when urgent)
+════════════════════════════════════════════════════ -->
+{% if low_stock_count or expiring_soon_count %}
+<div class="inv-alert-bar">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+    <span>
+        Inventory alert:
+        {% if low_stock_count %}
+            <strong>{{ low_stock_count }} item{{ low_stock_count|pluralize }} low / out of stock</strong>{% if expiring_soon_count %} &middot; {% endif %}
+        {% endif %}
+        {% if expiring_soon_count %}
+            <strong>{{ expiring_soon_count }} batch{{ expiring_soon_count|pluralize:"es" }} expiring within 90 days</strong>
+        {% endif %}
+    </span>
+    <a href="{% url 'inventory:alerts' %}" class="inv-alert-link">View &rarr;</a>
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════
+     INVENTORY STAT CARDS (second row)
+════════════════════════════════════════════════════ -->
+<div class="section-divider"><span>Inventory</span></div>
+
+<div class="stats-grid stats-grid-inv">
+    <a href="{% url 'inventory:item-list' %}" class="stat-card stat-purple inv-stat-link">
+        <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2.18c.07-.44.18-.88.18-1.36C18 2.53 15.5 1 13 1c-1.34 0-2.69.58-3.65 1.5L8 3.83 6.65 2.5A4.923 4.923 0 0 0 3 1C.5 1-2 2.53-2 4.64c0 .48.11.92.18 1.36H-2v13c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6zm-7-3c1.12 0 2 .88 2 2s-.88 2-2 2-2-.88-2-2 .88-2 2-2zM6 4.64C6 3.52 7 3 8 3c.55 0 1.07.2 1.46.54l-2.24 2.24C7.07 5.67 6 5.24 6 4.64zM10 19H8v-3H6v3H4v-3H2v3H0v-7.17l1-1V8h18v2.83l1 1V19h-2v-3h-2v3h-2v-3h-2v3z"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ inv_total_items }}</div>
+            <div class="stat-label">Active Stock Items</div>
+        </div>
+        <div class="stat-trend">Catalogue</div>
+    </a>
+
+    <a href="{% url 'inventory:alerts' %}" class="stat-card {% if low_stock_count %}stat-danger{% else %}stat-success{% endif %} inv-stat-link">
+        <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ low_stock_count }}</div>
+            <div class="stat-label">Low / Out of Stock</div>
+        </div>
+        <div class="stat-trend {% if low_stock_count %}warn{% endif %}">
+            {% if low_stock_count %}Reorder needed{% else %}All OK{% endif %}
+        </div>
+    </a>
+
+    <a href="{% url 'inventory:batch-list' %}" class="stat-card {% if expiring_soon_count %}stat-warn{% else %}stat-success{% endif %} inv-stat-link">
+        <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ expiring_soon_count }}</div>
+            <div class="stat-label">Expiring (90 days)</div>
+        </div>
+        <div class="stat-trend {% if expiring_soon_count %}warn{% endif %}">
+            {% if expiring_soon_count %}Check batches{% else %}None expiring{% endif %}
+        </div>
+    </a>
+
+    <a href="{% url 'inventory:po-list' %}" class="stat-card stat-blue inv-stat-link">
+        <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 14H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ pending_pos }}</div>
+            <div class="stat-label">Open Purchase Orders</div>
+        </div>
+        <div class="stat-trend">Draft + Submitted</div>
+    </a>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     INVENTORY QUICK LINKS
+════════════════════════════════════════════════════ -->
+<div class="svc-quicklinks inv-quicklinks">
+    <a href="{% url 'inventory:dashboard' %}" class="svc-link">
+        <div class="svc-link-icon" style="background:#ede9fe;color:#7c3aed;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        </div>
+        <div>
+            <div class="svc-link-title">Inventory Dashboard</div>
+            <div class="svc-link-sub">Stock overview &amp; stats</div>
+        </div>
+    </a>
+
+    <a href="{% url 'inventory:item-list' %}" class="svc-link">
+        <div class="svc-link-icon" style="background:#dbeafe;color:#1d4ed8;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2.18c.07-.44.18-.88.18-1.36C18 2.53 15.5 1 13 1c-1.34 0-2.69.58-3.65 1.5L8 3.83 6.65 2.5A4.923 4.923 0 0 0 3 1C.5 1-2 2.53-2 4.64c0 .48.11.92.18 1.36H-2v13c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6z"/></svg>
+        </div>
+        <div>
+            <div class="svc-link-title">Stock Items</div>
+            <div class="svc-link-sub">Browse catalogue</div>
+        </div>
+    </a>
+
+    <a href="{% url 'inventory:dispense' %}" class="svc-link">
+        <div class="svc-link-icon" style="background:#d1fae5;color:#065f46;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg>
+        </div>
+        <div>
+            <div class="svc-link-title">Dispense Items</div>
+            <div class="svc-link-sub">Issue to visit / ward</div>
+        </div>
+    </a>
+
+    <a href="{% url 'inventory:po-create' %}" class="svc-link">
+        <div class="svc-link-icon" style="background:#fef3c7;color:#92400e;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+        <div>
+            <div class="svc-link-title">New Purchase Order</div>
+            <div class="svc-link-sub">Raise a supplier PO</div>
+        </div>
+    </a>
+
+    <a href="{% url 'inventory:movement-list' %}" class="svc-link">
+        <div class="svc-link-icon" style="background:#fce7f3;color:#9d174d;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2.05V4.05C17.39 4.59 20.5 8.58 19.96 12.97C19.5 16.61 16.64 19.5 13 19.93V21.93C18.5 21.38 22.5 16.5 21.95 11C21.5 6.25 17.73 2.5 13 2.05M11 2.06C9.05 2.25 7.19 3 5.67 4.26L7.1 5.74C8.22 4.84 9.57 4.26 11 4.06V2.06M4.26 5.67C3 7.19 2.25 9.04 2.05 11H4.05C4.24 9.58 4.8 8.23 5.69 7.1L4.26 5.67M2.06 13C2.26 14.96 3.03 16.81 4.27 18.33L5.69 16.9C4.81 15.77 4.24 14.42 4.06 13H2.06M7.1 18.37L5.67 19.74C7.18 21 9.04 21.79 11 22V20C9.58 19.82 8.23 19.25 7.1 18.37M12 8L7 13H11V21H13V13H17L12 8Z"/></svg>
+        </div>
+        <div>
+            <div class="svc-link-title">Movement Ledger</div>
+            <div class="svc-link-sub">Full audit trail</div>
+        </div>
+    </a>
+
+    <a href="{% url 'inventory:adjust' %}" class="svc-link">
+        <div class="svc-link-icon" style="background:#e0e7ff;color:#3730a3;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        </div>
+        <div>
+            <div class="svc-link-title">Stock Adjustment</div>
+            <div class="svc-link-sub">Correct / write-off / return</div>
+        </div>
+    </a>
+</div>
+
+<!-- LOW STOCK MINI TABLE -->
+{% if low_stock_items %}
+<div class="card" style="border-left:3px solid var(--danger,#ef4444);margin-bottom:24px;">
+    <div class="card-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;fill:#ef4444;flex-shrink:0;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+            <h2 class="card-title" style="color:#ef4444;">Low / Out-of-Stock Items</h2>
+            <span class="count-badge">{{ low_stock_count }}</span>
+        </div>
+        <a href="{% url 'inventory:alerts' %}" class="btn btn-ghost btn-sm">View all alerts</a>
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr><th>Item</th><th>SKU</th><th>On Hand</th><th>Reorder Level</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for row in low_stock_items|slice:":6" %}
+                <tr>
+                    <td class="fw-600">{{ row.item.name }}</td>
+                    <td class="mono text-muted">{{ row.item.sku }}</td>
+                    <td>
+                        {% if row.is_out %}
+                            <span class="status-badge" style="background:rgba(239,68,68,.12);color:#b91c1c;">Out of Stock</span>
+                        {% else %}
+                            <span class="status-badge" style="background:rgba(234,179,8,.15);color:#854d0e;">{{ row.quantity }} {{ row.item.unit }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted">{{ row.reorder_level }} {{ row.item.unit }}</td>
+                    <td>
+                        <a href="{% url 'inventory:po-create' %}" class="btn btn-ghost btn-xs">Order</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════
+     RECENT VISITS
+════════════════════════════════════════════════════ -->
+<div class="section-divider"><span>Patients &amp; Visits</span></div>
+
 <div class="card">
     <div class="card-header">
         <h2 class="card-title">Recent Visits</h2>
@@ -133,11 +318,8 @@
 <!-- ═══════════════════════════════════════════════════
      SERVICES SECTION
 ════════════════════════════════════════════════════ -->
-<div class="section-divider">
-    <span>Diagnostic Services</span>
-</div>
+<div class="section-divider"><span>Diagnostic Services</span></div>
 
-<!-- QUICK LINKS ROW -->
 <div class="svc-quicklinks">
     <a href="{% url 'services:catalogue-list' %}" class="svc-link">
         <div class="svc-link-icon" style="background:var(--blue-light);color:var(--blue);">
@@ -227,10 +409,8 @@
                     </td>
                     <td>
                         <div style="display:flex;gap:6px;">
-                            <a href="{% url 'services:visit-service-create' %}?visit={{ v.pk }}"
-                               class="btn btn-primary btn-xs">+ Add Service</a>
-                            <a href="{% url 'patients:visit-detail' v.pk %}"
-                               class="btn btn-ghost btn-xs">View</a>
+                            <a href="{% url 'services:visit-service-create' %}?visit={{ v.pk }}" class="btn btn-primary btn-xs">+ Add Service</a>
+                            <a href="{% url 'patients:visit-detail' v.pk %}" class="btn btn-ghost btn-xs">View</a>
                         </div>
                     </td>
                 </tr>
@@ -247,13 +427,15 @@
 {% endif %}
 
 <style>
-/* ── existing stat-card styles (unchanged) ── */
+/* ── stat cards ── */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 16px;
     margin-bottom: 24px;
 }
+.stats-grid-inv { margin-bottom: 16px; }
+
 .stat-card {
     background: var(--white);
     border-radius: var(--radius-lg);
@@ -266,8 +448,10 @@
     position: relative;
     overflow: hidden;
     transition: box-shadow var(--transition), transform var(--transition);
+    text-decoration: none;
+    color: var(--text-primary);
 }
-.stat-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.stat-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); text-decoration:none; color:var(--text-primary); }
 .stat-card::after {
     content: '';
     position: absolute;
@@ -277,15 +461,20 @@
     opacity: 0.06;
     transform: translate(20px, -20px);
 }
-.stat-blue  { border-top: 3px solid var(--blue); }
+.stat-blue    { border-top: 3px solid var(--blue); }
 .stat-blue .stat-icon { background: var(--blue-light); color: var(--blue); }
 .stat-blue::after { background: var(--blue); }
-.stat-teal  { border-top: 3px solid var(--teal); }
+.stat-teal    { border-top: 3px solid var(--teal); }
 .stat-teal .stat-icon { background: var(--teal-light); color: var(--teal); }
-.stat-warn  { border-top: 3px solid var(--warn); }
+.stat-warn    { border-top: 3px solid var(--warn); }
 .stat-warn .stat-icon { background: var(--warn-light); color: var(--warn); }
 .stat-success { border-top: 3px solid var(--success); }
 .stat-success .stat-icon { background: var(--success-light); color: var(--success); }
+.stat-purple  { border-top: 3px solid #7c3aed; }
+.stat-purple .stat-icon { background: #ede9fe; color: #7c3aed; }
+.stat-danger  { border-top: 3px solid #ef4444; }
+.stat-danger .stat-icon { background: rgba(239,68,68,.1); color: #ef4444; }
+
 .stat-icon { width:48px;height:48px;border-radius:var(--radius);display:grid;place-items:center;flex-shrink:0; }
 .stat-icon svg { width:22px;height:22px; }
 .stat-content { flex:1; }
@@ -294,6 +483,24 @@
 .stat-trend { position:absolute;bottom:12px;right:14px;font-size:11px;font-weight:600;color:var(--text-muted); }
 .stat-trend.up { color:var(--success); }
 .stat-trend.warn { color:var(--warn); }
+
+/* ── inventory alert bar ── */
+.inv-alert-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(239,68,68,.08);
+    border: 1px solid rgba(239,68,68,.25);
+    border-radius: var(--radius-lg);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #b91c1c;
+    margin-bottom: 20px;
+}
+.inv-alert-bar svg { width:16px;height:16px;fill:#ef4444;flex-shrink:0; }
+.inv-alert-bar span { flex:1; }
+.inv-alert-link { font-weight:700;color:#b91c1c;white-space:nowrap; }
+.inv-alert-link:hover { color:#991b1b; }
 
 /* ── section divider ── */
 .section-divider {
@@ -310,13 +517,15 @@
 .section-divider::before,
 .section-divider::after { content:'';flex:1;height:1px;background:var(--border-light); }
 
-/* ── quick link row ── */
+/* ── quick link rows ── */
 .svc-quicklinks {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 12px;
     margin-bottom: 20px;
 }
+.inv-quicklinks { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+
 .svc-link {
     display: flex;
     align-items: center;
@@ -337,25 +546,13 @@
     text-decoration: none;
     color: var(--text-primary);
 }
-.svc-link-icon {
-    width: 40px; height: 40px;
-    border-radius: var(--radius);
-    display: grid; place-items: center;
-    flex-shrink: 0;
-}
-.svc-link-icon svg { width: 20px; height: 20px; }
-.svc-link-title { font-weight: 700; font-size: 13.5px; }
-.svc-link-sub   { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.svc-link-icon { width:40px;height:40px;border-radius:var(--radius);display:grid;place-items:center;flex-shrink:0; }
+.svc-link-icon svg { width:20px;height:20px; }
+.svc-link-title { font-weight:700;font-size:13.5px; }
+.svc-link-sub   { font-size:12px;color:var(--text-muted);margin-top:2px; }
 
-/* ── visits-without-services table badges ── */
-.count-badge {
-    background: var(--warn);
-    color: white;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 7px;
-    border-radius: 20px;
-}
+/* ── table misc ── */
+.count-badge { background:var(--warn);color:white;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px; }
 .status-badge { display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600; }
 .status-registered       { background:var(--surface-2);color:var(--text-muted); }
 .status-awaiting_payment { background:rgba(234,179,8,.15);color:#854d0e; }
@@ -379,5 +576,11 @@
     margin-bottom: 8px;
 }
 .all-clear svg { width:18px;height:18px;fill:var(--success);flex-shrink:0; }
+
+/* ── responsive tweaks ── */
+@media (max-width: 640px) {
+    .inv-quicklinks { grid-template-columns: repeat(2, 1fr); }
+    .stats-grid-inv { grid-template-columns: repeat(2, 1fr); }
+}
 </style>
 {% endblock %}

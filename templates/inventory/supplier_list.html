@@ -1,0 +1,95 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}Suppliers — Inventory{% endblock %}
+{% block page_title %}Suppliers{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Suppliers</h1>
+        <div class="breadcrumb"><a href="{% url 'inventory:dashboard' %}">Inventory</a> › Suppliers</div>
+    </div>
+    <a href="{% url 'inventory:supplier-create' %}" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+        Add Supplier
+    </a>
+</div>
+
+<form method="get" style="margin-bottom:16px;display:flex;gap:10px;align-items:center;">
+    <input type="text" name="q" value="{{ q }}" placeholder="Search by name, contact, or phone…" class="form-control" style="max-width:340px;">
+    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+    {% if q %}<a href="{% url 'inventory:supplier-list' %}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+</form>
+
+<div class="data-table-wrap">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for supplier in suppliers %}
+            <tr>
+                <td>
+                    <a href="{% url 'inventory:supplier-detail' supplier.pk %}" style="color:var(--text-primary);font-weight:600;text-decoration:none;">
+                        {{ supplier.name }}
+                    </a>
+                </td>
+                <td class="muted">{{ supplier.contact_name|default:"—" }}</td>
+                <td class="muted">{{ supplier.phone|default:"—" }}</td>
+                <td class="muted">{{ supplier.email|default:"—" }}</td>
+                <td>
+                    {% if supplier.is_active %}
+                        <span class="badge badge-success">Active</span>
+                    {% else %}
+                        <span class="badge badge-neutral">Inactive</span>
+                    {% endif %}
+                </td>
+                <td style="white-space:nowrap;">
+                    <a href="{% url 'inventory:supplier-detail' supplier.pk %}" class="btn-icon" title="View">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                    </a>
+                    <a href="{% url 'inventory:supplier-edit' supplier.pk %}" class="btn-icon" title="Edit" style="margin-left:4px;">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/></svg>
+                        <p>No suppliers found.</p>
+                        <a href="{% url 'inventory:supplier-create' %}" class="btn btn-primary btn-sm">Add your first supplier</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">‹</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="page-link active">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a class="page-link" href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}">›</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

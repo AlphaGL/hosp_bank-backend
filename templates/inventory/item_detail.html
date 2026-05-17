@@ -1,0 +1,208 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}{{ item.name }} — Inventory{% endblock %}
+{% block page_title %}{{ item.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>{{ item.name }}</h1>
+        <div class="breadcrumb">
+            <a href="{% url 'inventory:dashboard' %}">Inventory</a> ›
+            <a href="{% url 'inventory:item-list' %}">Items</a> ›
+            {{ item.sku }}
+        </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="{% url 'inventory:dispense' %}?item={{ item.pk }}" class="btn btn-primary btn-sm">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M20 9V7h-2V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-2h2v-2h-2v-2h2v-2h-2V9h2zm-4 10H4V5h12v14z"/></svg>
+            Dispense
+        </a>
+        <a href="{% url 'inventory:batch-create' %}?item={{ item.pk }}" class="btn btn-success btn-sm">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+            Receive Stock
+        </a>
+        <a href="{% url 'inventory:adjust' %}?item={{ item.pk }}" class="btn btn-ghost btn-sm">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+            Adjust
+        </a>
+        <a href="{% url 'inventory:item-edit' item.pk %}" class="btn btn-ghost btn-sm">Edit</a>
+    </div>
+</div>
+
+<!-- Stock summary cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:24px;">
+    <div class="stat-card {% if is_out_of_stock %}danger{% elif is_low_stock %}warn{% else %}success{% endif %}">
+        <div class="stat-label">On Hand</div>
+        <div class="stat-value">{{ quantity_on_hand }}</div>
+        <div class="stat-sub">{{ item.unit }}</div>
+    </div>
+    <div class="stat-card blue">
+        <div class="stat-label">Reorder Level</div>
+        <div class="stat-value">{{ item.reorder_level }}</div>
+        <div class="stat-sub">{{ item.unit }}</div>
+    </div>
+    <div class="stat-card blue">
+        <div class="stat-label">Reorder Qty</div>
+        <div class="stat-value">{{ item.reorder_quantity }}</div>
+        <div class="stat-sub">{{ item.unit }}</div>
+    </div>
+    <div class="stat-card teal">
+        <div class="stat-label">Unit Cost</div>
+        <div class="stat-value" style="font-size:20px;">₦{{ item.unit_cost }}</div>
+        <div class="stat-sub">per {{ item.unit }}</div>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+    <!-- Item Details -->
+    <div class="detail-card" style="margin-bottom:0">
+        <h2>Item Details</h2>
+        <div class="detail-grid">
+            <div class="detail-field">
+                <label>SKU</label>
+                <span class="mono">{{ item.sku }}</span>
+            </div>
+            <div class="detail-field">
+                <label>Category</label>
+                <span><span class="badge badge-blue">{{ item.get_category_display }}</span></span>
+            </div>
+            <div class="detail-field">
+                <label>Unit</label>
+                <span>{{ item.get_unit_display }}</span>
+            </div>
+            <div class="detail-field">
+                <label>Department</label>
+                <span>{{ item.department|default:"—" }}</span>
+            </div>
+            <div class="detail-field">
+                <label>Storage Location</label>
+                <span>{{ item.storage_location|default:"—" }}</span>
+            </div>
+            <div class="detail-field">
+                <label>Status</label>
+                <span>
+                    {% if is_out_of_stock %}
+                        <span class="badge badge-danger">Out of Stock</span>
+                    {% elif is_low_stock %}
+                        <span class="badge badge-warn">Low Stock</span>
+                    {% else %}
+                        <span class="badge badge-success">In Stock</span>
+                    {% endif %}
+                </span>
+            </div>
+            <div class="detail-field">
+                <label>Active</label>
+                <span>{% if item.is_active %}<span class="badge badge-success">Yes</span>{% else %}<span class="badge badge-neutral">No</span>{% endif %}</span>
+            </div>
+            <div class="detail-field">
+                <label>Created</label>
+                <span>{{ item.created_at|date:"d M Y" }}</span>
+            </div>
+        </div>
+        {% if item.description %}
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border-light);">
+            <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);display:block;margin-bottom:6px;">Description</label>
+            <p style="color:var(--text-secondary);font-size:13.5px;line-height:1.6;">{{ item.description }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Stock Batches -->
+    <div class="data-table-wrap" style="align-self:start;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="font-size:14px;font-weight:700;">Stock Batches</h3>
+            <a href="{% url 'inventory:batch-create' %}?item={{ item.pk }}" class="btn btn-success btn-sm">+ Receive</a>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Batch #</th>
+                    <th>Qty Received</th>
+                    <th>Expiry</th>
+                    <th>Supplier</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for batch in batches %}
+                <tr>
+                    <td class="mono">{{ batch.batch_number|default:"—" }}</td>
+                    <td>{{ batch.quantity_received }} {{ item.unit }}</td>
+                    <td>
+                        {% if batch.expiry_date %}
+                            {% if batch.is_expired %}
+                                <span class="badge badge-danger">{{ batch.expiry_date|date:"d M Y" }} (Expired)</span>
+                            {% elif batch.is_expiring_soon %}
+                                <span class="badge badge-warn">{{ batch.expiry_date|date:"d M Y" }}</span>
+                            {% else %}
+                                <span class="badge badge-success">{{ batch.expiry_date|date:"d M Y" }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="muted">No expiry</span>
+                        {% endif %}
+                    </td>
+                    <td class="muted">{{ batch.supplier|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="muted" style="text-align:center;padding:24px;">No batches recorded</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Recent Movements -->
+<div class="data-table-wrap">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;">
+        <h3 style="font-size:14px;font-weight:700;">Recent Movements</h3>
+        <a href="{% url 'inventory:movement-list' %}?item={{ item.pk }}" class="btn btn-ghost btn-sm">View all</a>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Δ Qty</th>
+                <th>Reference</th>
+                <th>Department</th>
+                <th>By</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in recent_movements %}
+            <tr>
+                <td class="muted">{{ m.created_at|date:"d M Y H:i" }}</td>
+                <td>
+                    {% if m.quantity_delta > 0 %}
+                        <span class="badge badge-success">{{ m.get_movement_type_display }}</span>
+                    {% else %}
+                        <span class="badge badge-warn">{{ m.get_movement_type_display }}</span>
+                    {% endif %}
+                </td>
+                <td class="mono" style="color:{% if m.quantity_delta > 0 %}var(--success){% else %}var(--danger){% endif %}">
+                    {% if m.quantity_delta > 0 %}+{% endif %}{{ m.quantity_delta }}
+                </td>
+                <td class="muted">{{ m.reference|default:"—" }}</td>
+                <td class="muted">{{ m.department|default:"—" }}</td>
+                <td class="muted">{{ m.performed_by.get_full_name|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="muted" style="text-align:center;padding:30px;">No movements yet</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if is_admin %}
+<div style="margin-top:24px;padding:16px;background:var(--danger-light);border:1px solid var(--danger);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;">
+    <div>
+        <div style="font-weight:600;color:var(--danger);">Deactivate Item</div>
+        <div style="font-size:12.5px;color:var(--text-secondary);">Removes the item from active inventory. Stock movements are preserved.</div>
+    </div>
+    <form method="post" action="{% url 'inventory:item-deactivate' item.pk %}" onsubmit="return confirm('Deactivate {{ item.name }}?')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm">Deactivate</button>
+    </form>
+</div>
+{% endif %}
+{% endblock %}

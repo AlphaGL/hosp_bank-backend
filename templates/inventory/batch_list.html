@@ -1,0 +1,110 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}Stock Batches — Inventory{% endblock %}
+{% block page_title %}Stock Batches{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Stock Batches</h1>
+        <div class="breadcrumb"><a href="{% url 'inventory:dashboard' %}">Inventory</a> › Batches</div>
+    </div>
+    <a href="{% url 'inventory:batch-create' %}" class="btn btn-success">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+        Receive Batch
+    </a>
+</div>
+
+<form method="get" class="filter-bar">
+    <div class="filter-group">
+        <label>Expiring Soon</label>
+        <div class="form-check" style="padding-top:6px;">
+            <input type="checkbox" name="expiring" id="id_expiring" class="form-check-input" {% if filters.expiring %}checked{% endif %}>
+            <label for="id_expiring">Within 90 days</label>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm btn-filter">Filter</button>
+    <a href="{% url 'inventory:batch-list' %}" class="btn btn-ghost btn-sm btn-filter">Clear</a>
+</form>
+
+<div class="data-table-wrap">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Batch #</th>
+                <th>Supplier</th>
+                <th>Qty Received</th>
+                <th>Unit Cost</th>
+                <th>Received</th>
+                <th>Expiry</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for batch in batches %}
+            <tr>
+                <td>
+                    <a href="{% url 'inventory:item-detail' batch.item.pk %}" style="color:var(--blue);font-weight:600;text-decoration:none;">
+                        {{ batch.item.name|truncatechars:30 }}
+                    </a>
+                    <div style="font-size:11px;color:var(--text-muted);">[{{ batch.item.sku }}]</div>
+                </td>
+                <td class="mono">{{ batch.batch_number|default:"—" }}</td>
+                <td class="muted">{{ batch.supplier|default:"—" }}</td>
+                <td>{{ batch.quantity_received }} {{ batch.item.unit }}</td>
+                <td class="mono">₦{{ batch.unit_cost }}</td>
+                <td class="muted">{{ batch.received_date|date:"d M Y" }}</td>
+                <td>
+                    {% if batch.expiry_date %}
+                        {{ batch.expiry_date|date:"d M Y" }}
+                    {% else %}
+                        <span class="muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not batch.expiry_date %}
+                        <span class="badge badge-neutral">No Expiry</span>
+                    {% elif batch.is_expired %}
+                        <span class="badge badge-danger">Expired</span>
+                    {% elif batch.days_to_expiry <= 30 %}
+                        <span class="badge badge-danger">Exp. in {{ batch.days_to_expiry }}d</span>
+                    {% elif batch.days_to_expiry <= 90 %}
+                        <span class="badge badge-warn">Exp. in {{ batch.days_to_expiry }}d</span>
+                    {% else %}
+                        <span class="badge badge-success">Valid</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 7h-4V5l-2-2h-4L8 5v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-8-2h2v2h-2V5z"/></svg>
+                        <p>No batches found.</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="page-link active">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

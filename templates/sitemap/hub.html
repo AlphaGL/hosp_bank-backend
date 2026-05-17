@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+{% block title %}Navigation Hub — MediCore{% endblock %}
+{% block page_title %}Navigation Hub{% endblock %}
+{% block nav_sitemap %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* ── Hub layout ────────────────────────────────────────────────────── */
+    .hub-header {
+        background: linear-gradient(135deg, var(--blue) 0%, var(--teal) 100%);
+        border-radius: var(--radius-xl);
+        padding: 32px 36px;
+        margin-bottom: 32px;
+        position: relative;
+        overflow: hidden;
+        color: white;
+    }
+
+    .hub-header::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .hub-header-content { position: relative; z-index: 1; }
+
+    .hub-title {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+        margin-bottom: 6px;
+        letter-spacing: -0.5px;
+    }
+
+    .hub-subtitle {
+        font-size: 14px;
+        opacity: 0.85;
+        margin-bottom: 20px;
+    }
+
+    .hub-role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,0.18);
+        border: 1px solid rgba(255,255,255,0.25);
+        backdrop-filter: blur(8px);
+        border-radius: 30px;
+        padding: 8px 18px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .hub-role-badge .role-dot {
+        width: 8px; height: 8px;
+        background: #4ade80;
+        border-radius: 50%;
+        box-shadow: 0 0 6px #4ade80;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.15); }
+    }
+
+    .hub-stats {
+        display: flex;
+        gap: 24px;
+        margin-top: 24px;
+    }
+
+    .hub-stat {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        opacity: 0.9;
+    }
+
+    .hub-stat strong { font-size: 22px; font-weight: 800; opacity: 1; }
+
+    /* ── App grid ───────────────────────────────────────────────────────── */
+    .hub-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
+
+    .hub-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .hub-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow);
+        border-color: #d0ddf7;
+    }
+
+    .hub-card-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 20px 22px 16px;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .hub-card-icon {
+        width: 46px; height: 46px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+    }
+
+    .hub-card-icon svg {
+        width: 22px; height: 22px;
+    }
+
+    .hub-card-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .hub-card-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 2px;
+        line-height: 1.4;
+    }
+
+    .hub-card-links {
+        padding: 14px 22px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+    }
+
+    .hub-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 12px;
+        border-radius: var(--radius);
+        text-decoration: none;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 500;
+        transition: background 0.14s ease, color 0.14s ease, padding-left 0.14s ease;
+        border: 1px solid transparent;
+    }
+
+    .hub-link::before {
+        content: '';
+        width: 5px; height: 5px;
+        border-radius: 50%;
+        background: var(--text-light);
+        flex-shrink: 0;
+        transition: background 0.14s ease, transform 0.14s ease;
+    }
+
+    .hub-link:hover {
+        background: var(--surface);
+        color: var(--text-primary);
+        padding-left: 16px;
+        border-color: var(--border-light);
+    }
+
+    .hub-link:hover::before {
+        background: var(--blue);
+        transform: scale(1.4);
+    }
+
+    .hub-link-arrow {
+        margin-left: auto;
+        width: 14px; height: 14px;
+        opacity: 0;
+        transition: opacity 0.14s ease, transform 0.14s ease;
+        color: var(--blue);
+    }
+
+    .hub-link:hover .hub-link-arrow {
+        opacity: 1;
+        transform: translateX(2px);
+    }
+
+    /* ── Color themes per card ──────────────────────────────────────────── */
+    .theme-blue   .hub-card-icon { background: var(--blue-light);   color: var(--blue); }
+    .theme-teal   .hub-card-icon { background: var(--teal-light);   color: var(--teal); }
+    .theme-success .hub-card-icon { background: var(--success-light); color: var(--success); }
+    .theme-warn   .hub-card-icon { background: var(--warn-light);   color: var(--warn); }
+    .theme-purple .hub-card-icon { background: var(--purple-soft);  color: var(--purple); }
+    .theme-danger .hub-card-icon { background: var(--danger-light); color: var(--danger); }
+
+    .theme-blue   .hub-card-header { border-top: 3px solid var(--blue); }
+    .theme-teal   .hub-card-header { border-top: 3px solid var(--teal); }
+    .theme-success .hub-card-header { border-top: 3px solid var(--success); }
+    .theme-warn   .hub-card-header { border-top: 3px solid var(--warn); }
+    .theme-purple .hub-card-header { border-top: 3px solid var(--purple); }
+    .theme-danger .hub-card-header { border-top: 3px solid var(--danger); }
+
+    /* ── Empty/locked state ─────────────────────────────────────────────── */
+    .hub-no-access {
+        text-align: center;
+        padding: 48px 24px;
+        color: var(--text-muted);
+        font-size: 14px;
+    }
+
+    /* ── Quick search ───────────────────────────────────────────────────── */
+    .hub-search-wrap {
+        margin-bottom: 24px;
+    }
+
+    .hub-search {
+        position: relative;
+        max-width: 420px;
+    }
+
+    .hub-search input {
+        padding-left: 42px;
+        padding-right: 16px;
+        height: 44px;
+        border-radius: var(--radius-lg);
+        font-size: 14px;
+    }
+
+    .hub-search .search-icon {
+        position: absolute;
+        left: 14px; top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        width: 18px; height: 18px;
+        pointer-events: none;
+    }
+
+    .hub-match { background: rgba(26,86,219,0.12); border-radius: 2px; }
+
+    /* ── Animation stagger ──────────────────────────────────────────────── */
+    .hub-card { animation: cardIn 0.3s ease both; }
+    @keyframes cardIn {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    {% for section in sitemap_data %}
+    .hub-card:nth-child({{ forloop.counter }}) { animation-delay: {{ forloop.counter0 }}00ms; }
+    {% endfor %}
+
+    @media (max-width: 700px) {
+        .hub-grid { grid-template-columns: 1fr; }
+        .hub-stats { flex-wrap: wrap; gap: 12px; }
+        .hub-title { font-size: 22px; }
+        .hub-header { padding: 24px 20px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Hero header ──────────────────────────────────────────────────────── -->
+<div class="hub-header">
+    <div class="hub-header-content">
+        <div class="hub-title">Navigation Hub</div>
+        <div class="hub-subtitle">Your personalised map of MediCore — only the modules your role can access are shown</div>
+
+        <div class="hub-role-badge">
+            <span class="role-dot"></span>
+            <strong>{{ role_label }}</strong>
+            <span style="opacity:.7;">·</span>
+            <span style="font-weight:400; opacity:.85;">{{ role_sub }}</span>
+        </div>
+
+        <div class="hub-stats">
+            <div class="hub-stat">
+                <strong>{{ sitemap_data|length }}</strong> module{% if sitemap_data|length != 1 %}s{% endif %} accessible
+            </div>
+            <div class="hub-stat" style="opacity:.5;">|</div>
+            <div class="hub-stat">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" style="opacity:.7"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                Role-aware — updates instantly on role change
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Quick filter search ──────────────────────────────────────────────── -->
+<div class="hub-search-wrap">
+    <div class="hub-search">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+        </svg>
+        <input type="text" id="hub-search-input" placeholder="Search modules and pages…" autocomplete="off">
+    </div>
+</div>
+
+<!-- ── App cards grid ───────────────────────────────────────────────────── -->
+{% if sitemap_data %}
+<div class="hub-grid" id="hub-grid">
+
+    {% for section in sitemap_data %}
+    {# Map CSS color variable to theme class #}
+    {% with color=section.color %}
+    {% if color == '--blue' %}{% with theme='theme-blue' %}
+    {% include "sitemap/_hub_card.html" with section=section theme=theme %}
+    {% endwith %}
+    {% elif color == '--teal' %}{% with theme='theme-teal' %}
+    {% include "sitemap/_hub_card.html" with section=section theme=theme %}
+    {% endwith %}
+    {% elif color == '--success' %}{% with theme='theme-success' %}
+    {% include "sitemap/_hub_card.html" with section=section theme=theme %}
+    {% endwith %}
+    {% elif color == '--warn' %}{% with theme='theme-warn' %}
+    {% include "sitemap/_hub_card.html" with section=section theme=theme %}
+    {% endwith %}
+    {% elif color == '--purple' %}{% with theme='theme-purple' %}
+    {% include "sitemap/_hub_card.html" with section=section theme=theme %}
+    {% endwith %}
+    {% else %}{% with theme='theme-danger' %}
+    {% include "sitemap/_hub_card.html" with section=section theme=theme %}
+    {% endwith %}
+    {% endif %}
+    {% endwith %}
+    {% endfor %}
+
+</div>
+{% else %}
+<div class="hub-no-access">
+    <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48" style="opacity:.2; margin-bottom:12px;">
+        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+    </svg>
+    <p>No modules available for your current role.<br>Contact an administrator if this seems incorrect.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+/* ── Live search filter ──────────────────────────────────────────────────── */
+const searchInput = document.getElementById('hub-search-input');
+const grid        = document.getElementById('hub-grid');
+
+searchInput.addEventListener('input', function () {
+    const q = this.value.trim().toLowerCase();
+    const cards = grid ? grid.querySelectorAll('.hub-card') : [];
+
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        if (!q || text.includes(q)) {
+            card.style.display = '';
+            // Highlight matching link labels
+            card.querySelectorAll('.hub-link').forEach(link => {
+                const label = link.querySelector('.hub-link-label');
+                if (!label) return;
+                const raw = label.dataset.raw || label.textContent;
+                label.dataset.raw = raw;
+                if (!q) {
+                    label.innerHTML = raw;
+                } else {
+                    const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                    label.innerHTML = raw.replace(regex, '<mark class="hub-match">$1</mark>');
+                }
+            });
+        } else {
+            card.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

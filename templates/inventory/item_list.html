@@ -1,0 +1,135 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}Items — Inventory{% endblock %}
+{% block page_title %}Consumable Items{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Consumable Items</h1>
+        <div class="breadcrumb"><a href="{% url 'inventory:dashboard' %}">Inventory</a> › Items</div>
+    </div>
+    {% if is_admin %}
+    <a href="{% url 'inventory:item-create' %}" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+        Add Item
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filter bar -->
+<form method="get" class="filter-bar">
+    <div class="filter-group">
+        <label>Search</label>
+        {{ filter_form.q }}
+    </div>
+    <div class="filter-group">
+        <label>Category</label>
+        {{ filter_form.category }}
+    </div>
+    <div class="filter-group">
+        <label>Department</label>
+        {{ filter_form.department }}
+    </div>
+    <div class="filter-group" style="flex-direction:row;align-items:center;gap:8px;padding-top:18px;">
+        <div class="form-check">
+            {{ filter_form.low_stock }}
+            <label for="{{ filter_form.low_stock.id_for_label }}">Low stock only</label>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm btn-filter">Filter</button>
+    <a href="{% url 'inventory:item-list' %}" class="btn btn-ghost btn-sm btn-filter">Clear</a>
+</form>
+
+<div class="data-table-wrap">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Department</th>
+                <th>On Hand</th>
+                <th>Reorder Level</th>
+                <th>Unit Cost</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="mono">{{ item.sku }}</td>
+                <td>
+                    <a href="{% url 'inventory:item-detail' item.pk %}" style="color:var(--text-primary);font-weight:600;text-decoration:none;">
+                        {{ item.name }}
+                    </a>
+                    {% if item.storage_location %}
+                    <div style="font-size:11px;color:var(--text-muted);">📦 {{ item.storage_location }}</div>
+                    {% endif %}
+                </td>
+                <td><span class="badge badge-blue">{{ item.get_category_display }}</span></td>
+                <td class="muted">{{ item.department|default:"—" }}</td>
+                <td>
+                    <span style="font-weight:700;color:{% if item.qty_on_hand <= 0 %}var(--danger){% elif item.qty_on_hand <= item.reorder_level %}var(--warn){% else %}var(--success){% endif %}">
+                        {{ item.qty_on_hand }}
+                    </span>
+                    <span class="muted" style="font-size:12px;"> {{ item.unit }}</span>
+                </td>
+                <td class="muted">{{ item.reorder_level }} {{ item.unit }}</td>
+                <td class="mono">₦{{ item.unit_cost }}</td>
+                <td>
+                    {% if item.qty_on_hand <= 0 %}
+                        <span class="badge badge-danger">Out of Stock</span>
+                    {% elif item.qty_on_hand <= item.reorder_level %}
+                        <span class="badge badge-warn">Low</span>
+                    {% else %}
+                        <span class="badge badge-success">OK</span>
+                    {% endif %}
+                </td>
+                <td style="white-space:nowrap;">
+                    <a href="{% url 'inventory:item-detail' item.pk %}" class="btn-icon" title="View">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                    </a>
+                    {% if is_admin %}
+                    <a href="{% url 'inventory:item-edit' item.pk %}" class="btn-icon" title="Edit" style="margin-left:4px;">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 7h-4V5l-2-2h-4L8 5v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-8-2h2v2h-2V5z"/></svg>
+                        <p>No items match your filter.</p>
+                        <a href="{% url 'inventory:item-list' %}" class="btn btn-ghost btn-sm">Clear filters</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a class="page-link" href="?page=1">«</a>
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="page-link active">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a>
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">»</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

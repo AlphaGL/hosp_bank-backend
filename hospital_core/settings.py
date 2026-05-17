@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     'queues',
     'notifications',
     'dashboard',
+    'inventory',
+    'sitemap',
 ]
 
 # ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
@@ -63,6 +65,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'patients.context_processors.nav_context',
             ],
         },
     },

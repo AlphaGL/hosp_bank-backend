@@ -1,0 +1,85 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}Movement #{{ movement.pk }} — Inventory{% endblock %}
+{% block page_title %}Stock Movement{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Movement Detail</h1>
+        <div class="breadcrumb">
+            <a href="{% url 'inventory:dashboard' %}">Inventory</a> ›
+            <a href="{% url 'inventory:movement-list' %}">Ledger</a> ›
+            #{{ movement.pk }}
+        </div>
+    </div>
+    <a href="{% url 'inventory:movement-list' %}" class="btn btn-ghost btn-sm">← Back to Ledger</a>
+</div>
+
+<div class="detail-card" style="max-width:700px;">
+    <h2>
+        {% if movement.quantity_delta > 0 %}
+            <span class="badge badge-success" style="font-size:14px;">{{ movement.get_movement_type_display }}</span>
+        {% elif movement.movement_type == 'writeoff' %}
+            <span class="badge badge-danger" style="font-size:14px;">{{ movement.get_movement_type_display }}</span>
+        {% else %}
+            <span class="badge badge-warn" style="font-size:14px;">{{ movement.get_movement_type_display }}</span>
+        {% endif %}
+    </h2>
+
+    <div class="detail-grid" style="margin-top:16px;">
+        <div class="detail-field">
+            <label>Item</label>
+            <span><a href="{% url 'inventory:item-detail' movement.item.pk %}" style="color:var(--blue);text-decoration:none;font-weight:600;">{{ movement.item.name }}</a></span>
+        </div>
+        <div class="detail-field">
+            <label>SKU</label>
+            <span class="mono">{{ movement.item.sku }}</span>
+        </div>
+        <div class="detail-field">
+            <label>Quantity Change</label>
+            <span style="font-size:22px;font-weight:800;color:{% if movement.quantity_delta > 0 %}var(--success){% else %}var(--danger){% endif %}">
+                {% if movement.quantity_delta > 0 %}+{% endif %}{{ movement.quantity_delta }} {{ movement.item.unit }}
+            </span>
+        </div>
+        <div class="detail-field">
+            <label>Batch</label>
+            <span class="mono">{{ movement.batch.batch_number|default:"—" }}</span>
+        </div>
+        <div class="detail-field">
+            <label>Reference</label>
+            <span>{{ movement.reference|default:"—" }}</span>
+        </div>
+        <div class="detail-field">
+            <label>Department</label>
+            <span>{{ movement.department|default:"—" }}</span>
+        </div>
+        <div class="detail-field">
+            <label>Performed By</label>
+            <span>{{ movement.performed_by.get_full_name|default:"—" }}</span>
+        </div>
+        <div class="detail-field">
+            <label>Date &amp; Time</label>
+            <span>{{ movement.created_at|date:"d M Y H:i:s" }}</span>
+        </div>
+        {% if movement.visit %}
+        <div class="detail-field">
+            <label>Visit</label>
+            <span>Visit #{{ movement.visit.pk }}{% if movement.visit.patient %} — {{ movement.visit.patient }}{% endif %}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if movement.notes %}
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border-light);">
+        <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-muted);display:block;margin-bottom:6px;">Notes</label>
+        <p style="color:var(--text-secondary);font-size:13.5px;line-height:1.6;">{{ movement.notes }}</p>
+    </div>
+    {% endif %}
+
+    <div style="margin-top:20px;padding:12px 16px;background:var(--surface);border-radius:var(--radius);font-size:12px;color:var(--text-muted);">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;opacity:0.6"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+        This record is immutable. Stock movements cannot be edited or deleted.
+    </div>
+</div>
+{% endblock %}

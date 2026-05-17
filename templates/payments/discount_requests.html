@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+{% block title %}Discount Requests{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Discount Requests</h1>
+        <p class="page-subtitle">Review and act on discount requests raised by finance staff.</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'payments:list' %}" class="btn btn-secondary">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            Back to Billing
+        </a>
+    </div>
+</div>
+
+{% if pending_count %}
+<div class="alert-banner alert-warn">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+    <span><strong>{{ pending_count }} request{{ pending_count|pluralize }}</strong> awaiting your review.</span>
+</div>
+{% else %}
+<div class="alert-banner alert-ok">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    <span>No pending discount requests. All caught up.</span>
+</div>
+{% endif %}
+
+{% if messages %}
+<div class="messages-wrap">
+    {% for msg in messages %}
+    <div class="msg msg-{{ msg.tags }}">{{ msg }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ── Summary strip ── -->
+<div class="summary-strip">
+    <div class="summary-item">
+        <span class="summary-val text-warn">{{ pending_count }}</span>
+        <span class="summary-lbl">Pending</span>
+    </div>
+    <div class="summary-sep"></div>
+    <div class="summary-item">
+        <span class="summary-val text-success">
+            {{ discount_requests|length }}
+        </span>
+        <span class="summary-lbl">Total Requests</span>
+    </div>
+</div>
+
+<!-- ── Main table ── -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">All Discount Requests</h2>
+        <span class="text-muted" style="font-size:13px;">Pending shown first</span>
+    </div>
+
+    {% if discount_requests %}
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Receipt</th>
+                    <th>Patient</th>
+                    <th>Requested By</th>
+                    <th class="text-right">Amount Due</th>
+                    <th class="text-right">Discount</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dr in discount_requests %}
+                <tr class="{% if dr.status == 'pending' %}row-pending{% endif %}">
+
+                    <!-- Receipt -->
+                    <td>
+                        <a href="{% url 'payments:detail' dr.payment.pk %}" class="mono link-primary">
+                            {{ dr.payment.receipt_number }}
+                        </a>
+                    </td>
+
+                    <!-- Patient -->
+                    <td>
+                        <div class="patient-cell">
+                            <div class="avatar-sm">
+                                {{ dr.payment.visit.patient.first_name|first|upper }}{{ dr.payment.visit.patient.last_name|first|upper }}
+                            </div>
+                            <div>
+                                <div class="fw-600">{{ dr.payment.visit.patient.full_name }}</div>
+                                <div class="text-muted fs-12">{{ dr.payment.visit.patient.patient_id }}</div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Requested by -->
+                    <td class="text-muted">{{ dr.requested_by.get_full_name|default:dr.requested_by.username }}</td>
+
+                    <!-- Amount due -->
+                    <td class="text-right mono">₦{{ dr.payment.amount_due|floatformat:2 }}</td>
+
+                    <!-- Discount -->
+                    <td class="text-right">
+                        <span class="discount-amount">₦{{ dr.discount_amount|floatformat:2 }}</span>
+                    </td>
+
+                    <!-- Reason (truncated) -->
+                    <td>
+                        <span class="reason-text" title="{{ dr.reason }}">
+                            {{ dr.reason|truncatechars:60 }}
+                        </span>
+                    </td>
+
+                    <!-- Status badge -->
+                    <td>
+                        {% if dr.status == 'pending' %}
+                            <span class="status-badge status-pending">Pending</span>
+                        {% elif dr.status == 'approved' %}
+                            <span class="status-badge status-approved">Approved</span>
+                        {% else %}
+                            <span class="status-badge status-rejected">Rejected</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Date -->
+                    <td class="text-muted fs-12 text-nowrap">{{ dr.created_at|date:"M d, Y" }}</td>
+
+                    <!-- Action -->
+                    <td>
+                        {% if dr.status == 'pending' %}
+                        <div class="action-group">
+                            <!-- Approve -->
+                            <form method="post" action="{% url 'payments:discount-review' dr.pk %}" class="inline-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="approve">
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                <button type="submit" class="btn btn-success btn-xs"
+                                        onclick="return confirm('Approve ₦{{ dr.discount_amount|floatformat:2 }} discount for {{ dr.payment.visit.patient.full_name }}?')">
+                                    Approve
+                                </button>
+                            </form>
+
+                            <!-- Reject (opens inline note panel) -->
+                            <button type="button" class="btn btn-danger btn-xs"
+                                    onclick="toggleRejectPanel({{ dr.pk }})">
+                                Reject
+                            </button>
+                        </div>
+
+                        <!-- Reject note panel (hidden by default) -->
+                        <div id="reject-panel-{{ dr.pk }}" class="reject-panel" style="display:none;">
+                            <form method="post" action="{% url 'payments:discount-review' dr.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="reject">
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                <textarea name="reviewer_note" class="reject-note"
+                                          placeholder="Optional note for requester…" rows="2"></textarea>
+                                <div class="reject-actions">
+                                    <button type="submit" class="btn btn-danger btn-xs">Confirm Reject</button>
+                                    <button type="button" class="btn btn-ghost btn-xs"
+                                            onclick="toggleRejectPanel({{ dr.pk }})">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {% else %}
+                        <!-- Already reviewed -->
+                        <div class="reviewed-info">
+                            {% if dr.reviewed_by %}
+                            <span class="text-muted fs-12">
+                                by {{ dr.reviewed_by.get_full_name|default:dr.reviewed_by.username }}<br>
+                                {{ dr.reviewed_at|date:"M d" }}
+                            </span>
+                            {% endif %}
+                            {% if dr.reviewer_note %}
+                            <span class="note-icon" title="{{ dr.reviewer_note }}">
+                                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                            </span>
+                            {% endif %}
+                            <a href="{% url 'payments:detail' dr.payment.pk %}" class="btn btn-ghost btn-xs">View</a>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="pagination-wrap">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-ghost btn-sm">← Prev</a>
+        {% endif %}
+        <span class="page-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-ghost btn-sm">Next →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+        <p>No discount requests found.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* ── alert banners ── */
+.alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: var(--radius-lg);
+    padding: 12px 16px;
+    font-size: 13.5px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    border: 1px solid;
+}
+.alert-banner svg { width:18px; height:18px; flex-shrink:0; }
+.alert-warn { background:rgba(234,179,8,.1); border-color:rgba(234,179,8,.35); color:#854d0e; }
+.alert-warn svg { fill: var(--warn, #ca8a04); }
+.alert-ok   { background:rgba(5,150,105,.08); border-color:rgba(5,150,105,.25); color:#065f46; }
+.alert-ok svg { fill: var(--success, #059669); }
+
+/* ── summary strip ── */
+.summary-strip {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 24px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+}
+.summary-sep { width:1px; height:32px; background:var(--border); }
+.summary-item { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.summary-val { font-size:26px; font-weight:700; line-height:1; }
+.summary-lbl { font-size:11.5px; color:var(--text-muted); font-weight:500; text-transform:uppercase; letter-spacing:.5px; }
+.text-warn    { color: var(--warn, #ca8a04); }
+.text-success { color: var(--success, #059669); }
+
+/* ── table helpers ── */
+.text-right   { text-align: right; }
+.text-nowrap  { white-space: nowrap; }
+.fs-12        { font-size: 12px; }
+.fw-600       { font-weight: 600; }
+.text-muted   { color: var(--text-muted); }
+.mono         { font-family: monospace; font-size: 13px; }
+.link-primary { color: var(--blue); text-decoration: none; font-weight: 600; }
+.link-primary:hover { text-decoration: underline; }
+
+/* ── row highlight for pending ── */
+.row-pending { background: rgba(234,179,8,.04); }
+.row-pending:hover { background: rgba(234,179,8,.08) !important; }
+
+/* ── patient cell ── */
+.patient-cell { display:flex; align-items:center; gap:10px; }
+.avatar-sm {
+    width:32px; height:32px; border-radius:50%;
+    background:var(--blue-light,#dbeafe); color:var(--blue,#1d4ed8);
+    display:grid; place-items:center;
+    font-size:11px; font-weight:700; flex-shrink:0;
+}
+
+/* ── discount amount ── */
+.discount-amount { font-weight:700; color: var(--blue, #1d4ed8); font-family:monospace; }
+
+/* ── reason text ── */
+.reason-text { font-size:13px; color:var(--text-secondary,#374151); max-width:220px; display:block; }
+
+/* ── status badges ── */
+.status-badge { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:600; }
+.status-pending  { background:rgba(234,179,8,.15);  color:#854d0e; }
+.status-approved { background:rgba(5,150,105,.15);  color:#065f46; }
+.status-rejected { background:rgba(239,68,68,.12);  color:#b91c1c; }
+
+/* ── action group ── */
+.action-group { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.inline-form  { display:inline; }
+
+/* ── reject panel ── */
+.reject-panel {
+    margin-top: 8px;
+    padding: 10px;
+    background: rgba(239,68,68,.05);
+    border: 1px solid rgba(239,68,68,.2);
+    border-radius: var(--radius);
+}
+.reject-note {
+    width: 100%;
+    font-size: 12.5px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    resize: vertical;
+    margin-bottom: 6px;
+    font-family: inherit;
+}
+.reject-actions { display:flex; gap:6px; }
+
+/* ── reviewed info ── */
+.reviewed-info { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.note-icon svg { width:14px; height:14px; fill:var(--text-muted); cursor:help; vertical-align:middle; }
+
+/* ── pagination ── */
+.pagination-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px;
+    border-top: 1px solid var(--border-light);
+}
+.page-info { font-size:13px; color:var(--text-muted); }
+
+/* ── empty state ── */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 56px 24px;
+    color: var(--text-muted);
+}
+.empty-state svg { width:40px; height:40px; fill:var(--border); }
+.empty-state p   { font-size:14px; margin:0; }
+
+/* ── messages ── */
+.messages-wrap { margin-bottom:16px; display:flex; flex-direction:column; gap:8px; }
+.msg { padding:10px 14px; border-radius:var(--radius); font-size:13.5px; font-weight:500; }
+.msg-success { background:rgba(5,150,105,.1); color:#065f46; border:1px solid rgba(5,150,105,.2); }
+.msg-error   { background:rgba(239,68,68,.1); color:#b91c1c; border:1px solid rgba(239,68,68,.2); }
+.msg-warning { background:rgba(234,179,8,.1); color:#854d0e; border:1px solid rgba(234,179,8,.2); }
+.msg-info    { background:rgba(59,130,246,.1); color:var(--blue); border:1px solid rgba(59,130,246,.2); }
+
+/* ── button sizes ── */
+.btn-xs { padding:4px 10px; font-size:12px; }
+.btn-success { background:var(--success,#059669); color:#fff; border-color:var(--success,#059669); }
+.btn-success:hover { opacity:.88; }
+.btn-danger { background:#ef4444; color:#fff; border-color:#ef4444; }
+.btn-danger:hover { opacity:.88; }
+</style>
+
+<script>
+function toggleRejectPanel(id) {
+    const panel = document.getElementById('reject-panel-' + id);
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+
+{% endblock %}

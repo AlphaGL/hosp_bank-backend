@@ -1,0 +1,33 @@
+{% comment %}
+sitemap/_hub_card.html
+Included by hub.html once per section.
+Variables expected: section, theme
+{% endcomment %}
+<div class="hub-card {{ theme }}" data-section="{{ section.title }}">
+
+    <div class="hub-card-header">
+        <div class="hub-card-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                {{ section.icon_path|safe }}
+            </svg>
+        </div>
+        <div>
+            <div class="hub-card-title">{{ section.title }}</div>
+            <div class="hub-card-desc">{{ section.description }}</div>
+        </div>
+    </div>
+
+    <div class="hub-card-links">
+        {% for link in section.links %}
+        <a href="{{ link.url }}" class="hub-link">
+            <span class="hub-link-label">{{ link.label }}</span>
+            <svg class="hub-link-arrow" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/>
+            </svg>
+        </a>
+        {% empty %}
+        <span style="font-size:12px; color:var(--text-muted); padding: 8px 12px;">No accessible pages in this module.</span>
+        {% endfor %}
+    </div>
+
+</div>

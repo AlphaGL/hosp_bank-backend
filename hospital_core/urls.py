@@ -28,4 +28,8 @@ urlpatterns = [
 
     # ── Dashboard (no namespace — uses plain names 'dashboard-summary' etc) ─
     path('dashboard/', include('dashboard.urls')),
+
+    path('inventory/', include('inventory.urls', namespace='inventory')),
+
+    path('nav/', include('sitemap.urls')),   # add this
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

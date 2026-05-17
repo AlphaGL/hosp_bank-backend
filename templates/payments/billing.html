@@ -1,0 +1,471 @@
+{% extends "base.html" %}
+{% block title %}Billing — MediCore HMS{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f0e0d; --paper: #f7f5f2; --card: #ffffff;
+  --accent: #c8501a; --accent-light: #f4e8e1;
+  --muted: #7a7570; --border: #e5e2dd;
+  --success: #2a7d4f; --success-bg: #e6f4ed;
+  --warning: #b07a10; --warning-bg: #fdf3dc;
+  --info: #1a6da8;   --info-bg: #e1eef8;
+  --danger: #b91c1c; --danger-bg: #fee2e2;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15,14,13,.06), 0 4px 16px rgba(15,14,13,.06);
+}
+body { background: var(--paper); font-family: 'DM Sans', sans-serif; color: var(--ink); }
+
+/* ── Page layout ── */
+.billing-layout { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: start; }
+@media (max-width: 900px) { .billing-layout { grid-template-columns: 1fr; } }
+
+/* ── Page header ── */
+.page-header { margin-bottom: 1.75rem; }
+.page-header-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.page-title { font-family: 'Syne', sans-serif; font-size: 1.75rem; font-weight: 800; letter-spacing: -.02em; margin: 0 0 .15rem; }
+.page-title span { color: var(--accent); }
+.page-subtitle { font-size: .84rem; color: var(--muted); margin: 0; }
+
+/* ── Filter bar ── */
+.filter-bar {
+  display: flex; gap: .6rem; align-items: center; flex-wrap: wrap;
+  padding: .85rem 1rem; background: var(--card);
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); margin-bottom: 1.25rem;
+}
+.filter-label { font-family: 'Syne', sans-serif; font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--muted); white-space: nowrap; }
+.filter-bar select, .filter-bar input {
+  padding: .38rem .75rem; border-radius: 7px; font-family: inherit;
+  font-size: .82rem; border: 1.5px solid var(--border);
+  background: var(--paper); color: var(--ink); transition: border .15s;
+}
+.filter-bar select:focus, .filter-bar input:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,80,26,.1);
+}
+.btn-filter {
+  padding: .38rem .9rem; border-radius: 7px; font-size: .82rem; font-weight: 600;
+  border: none; background: var(--accent); color: #fff; cursor: pointer; transition: opacity .15s;
+}
+.btn-filter:hover { opacity: .88; }
+.btn-clear-filter {
+  padding: .38rem .75rem; border-radius: 7px; font-size: .82rem; font-weight: 500;
+  border: 1.5px solid var(--border); background: transparent; color: var(--muted);
+  text-decoration: none; transition: all .13s;
+}
+.btn-clear-filter:hover { border-color: var(--ink); color: var(--ink); }
+
+/* ── Table card ── */
+.table-card {
+  background: var(--card); border-radius: 14px;
+  border: 1.5px solid var(--border); overflow: hidden; box-shadow: var(--shadow);
+}
+.table-card table { width: 100%; border-collapse: collapse; margin: 0; }
+.table-card thead th {
+  background: var(--paper); padding: .72rem 1rem;
+  font-family: 'Syne', sans-serif; font-size: .68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+  border-bottom: 1.5px solid var(--border); white-space: nowrap;
+}
+.table-card tbody td {
+  padding: .85rem 1rem; border-bottom: 1px solid var(--border);
+  font-size: .86rem; vertical-align: middle;
+}
+.table-card tbody tr:last-child td { border-bottom: none; }
+.table-card tbody tr { transition: background .12s; }
+.table-card tbody tr:hover { background: #faf9f7; }
+
+/* ── Receipt number ── */
+.receipt-code {
+  font-family: 'SF Mono','Fira Code',monospace; font-size: .76rem;
+  background: var(--paper); padding: .15rem .45rem; border-radius: 5px;
+  border: 1px solid var(--border); color: var(--ink);
+}
+
+/* ── Status badges ── */
+.status-badge {
+  display: inline-flex; align-items: center; gap: .28rem;
+  padding: .25rem .7rem; border-radius: 999px;
+  font-size: .72rem; font-weight: 600; white-space: nowrap;
+}
+.status-badge::before { content:''; width:6px; height:6px; border-radius:50%; display:inline-block; }
+.s-paid    { background: var(--success-bg); color: var(--success); }
+.s-paid::before { background: var(--success); }
+.s-pending { background: var(--warning-bg); color: var(--warning); }
+.s-pending::before { background: var(--warning); }
+.s-failed  { background: var(--danger-bg); color: var(--danger); }
+.s-failed::before { background: var(--danger); }
+.s-refunded { background: var(--info-bg); color: var(--info); }
+.s-refunded::before { background: var(--info); }
+
+/* ── Discount badge ── */
+.discount-chip {
+  display: inline-flex; align-items: center; gap: .25rem;
+  font-size: .7rem; font-weight: 600;
+  background: #f3f0fb; color: #6d3fa8;
+  padding: .18rem .55rem; border-radius: 5px;
+  border: 1px solid #d9d0f5;
+}
+
+/* ── View button ── */
+.btn-view {
+  display: inline-flex; align-items: center; gap: .25rem;
+  padding: .28rem .7rem; border-radius: 6px; font-size: .76rem; font-weight: 600;
+  border: 1.5px solid var(--border); background: var(--card);
+  color: var(--ink); text-decoration: none; transition: all .13s;
+}
+.btn-view:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+/* ── Pagination ── */
+.pagination-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .85rem 1rem; border-top: 1.5px solid var(--border);
+  flex-wrap: wrap; gap: .5rem;
+}
+.pagination-info { font-size: .8rem; color: var(--muted); }
+.pagination-btns { display: flex; gap: .4rem; }
+.page-btn {
+  padding: .35rem .85rem; border-radius: 7px; font-size: .8rem; font-weight: 500;
+  border: 1.5px solid var(--border); background: var(--card); color: var(--ink);
+  text-decoration: none; transition: all .12s;
+}
+.page-btn:hover { border-color: var(--accent); color: var(--accent); }
+.page-btn.current { background: var(--ink); color: #fff; border-color: var(--ink); cursor: default; }
+
+/* ── Empty state ── */
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+.empty-icon { font-size: 2rem; opacity: .3; margin-bottom: .6rem; }
+
+/* ════════════════════════════════
+   RIGHT PANEL — Create + Quick actions
+   ════════════════════════════════ */
+.right-panel { display: flex; flex-direction: column; gap: 1.25rem; position: sticky; top: 1.5rem; }
+
+/* ── Panel card ── */
+.panel-card {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow);
+}
+.panel-card-header {
+  padding: .75rem 1.2rem; display: flex; align-items: center; justify-content: space-between;
+  background: var(--paper); border-bottom: 1.5px solid var(--border);
+  font-family: 'Syne', sans-serif; font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+}
+.panel-card-body { padding: 1.2rem; }
+
+/* ── Form fields in panel ── */
+.panel-field { margin-bottom: 1rem; }
+.panel-field:last-of-type { margin-bottom: 0; }
+.panel-label { display: block; font-weight: 600; font-size: .82rem; margin-bottom: .35rem; }
+.panel-card select,
+.panel-card input[type="text"],
+.panel-card input[type="number"],
+.panel-card textarea {
+  width: 100%; padding: .5rem .85rem; border-radius: 8px;
+  border: 1.5px solid var(--border); background: var(--paper);
+  font-family: inherit; font-size: .87rem; color: var(--ink);
+  transition: border .15s, box-shadow .15s; box-sizing: border-box;
+}
+.panel-card select:focus,
+.panel-card input:focus,
+.panel-card textarea:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,80,26,.1);
+}
+.panel-card textarea { resize: vertical; min-height: 70px; }
+.panel-field-error { margin-top: .3rem; font-size: .77rem; color: var(--accent); }
+
+/* ── Submit button ── */
+.btn-create {
+  width: 100%; padding: .58rem 1.2rem; border-radius: 8px; margin-top: 1rem;
+  background: var(--accent); color: #fff; border: none;
+  font-family: 'Syne', sans-serif; font-weight: 700; font-size: .9rem;
+  cursor: pointer; transition: opacity .15s, transform .1s;
+  box-shadow: 0 2px 8px rgba(200,80,26,.25);
+  display: flex; align-items: center; justify-content: center; gap: .4rem;
+}
+.btn-create:hover { opacity: .88; transform: translateY(-1px); }
+
+/* ── Stats strip ── */
+.stats-row { display: flex; flex-direction: column; gap: .6rem; padding: 1rem 1.2rem; }
+.stat-item {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: .85rem;
+}
+.stat-label { color: var(--muted); }
+.stat-value { font-weight: 700; font-family: 'Syne', sans-serif; }
+.stat-divider { height: 1px; background: var(--border); margin: .2rem 0; }
+
+/* ── Pending discounts link ── */
+.discount-alert {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .85rem 1.2rem;
+  background: #f3f0fb; border: 1.5px solid #d9d0f5;
+  border-radius: var(--radius); text-decoration: none;
+  transition: background .15s;
+}
+.discount-alert:hover { background: #ebe7f9; }
+.discount-count-pill {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: #6d3fa8; color: #fff;
+  display: grid; place-items: center;
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: .85rem;
+}
+.discount-alert-text { flex: 1; }
+.discount-alert-title { font-weight: 700; font-size: .85rem; color: #4a2880; margin-bottom: .1rem; }
+.discount-alert-sub { font-size: .75rem; color: #7a5fa8; }
+
+/* ── Alerts ── */
+.alert-custom {
+  padding: .7rem 1rem; border-radius: var(--radius); margin-bottom: 1rem;
+  font-size: .86rem; display: flex; align-items: flex-start; gap: .5rem;
+}
+.alert-success { background: var(--success-bg); color: var(--success); border: 1px solid #b2d9c2; }
+.alert-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid #e0c97a; }
+.alert-error, .alert-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid #fca5a5; }
+.alert-close { margin-left: auto; background: none; border: none; cursor: pointer; color: inherit; opacity: .55; font-size: 1rem; padding: 0; }
+
+/* ── Non-finance view ── */
+.readonly-notice {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .85rem 1.2rem; background: var(--info-bg);
+  border: 1.5px solid #b2d0e8; border-radius: var(--radius);
+  font-size: .84rem; color: var(--info);
+}
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+.table-card { animation: fadeUp .22s ease both; }
+.right-panel { animation: fadeUp .25s ease .06s both; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-header-row">
+    <div>
+      <h1 class="page-title">Billing <span>&amp; Payments</span></h1>
+      <p class="page-subtitle">Manage invoices, confirm payments, and track outstanding balances.</p>
+    </div>
+    {% if is_admin %}
+      <a href="{% url 'payments:discounts' %}" style="text-decoration:none;">
+        <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .9rem;border-radius:8px;border:1.5px solid #d9d0f5;background:#f3f0fb;">
+          <span style="font-size:.8rem;font-weight:600;color:#4a2880;">Discount Queue</span>
+          {% if pending_discount_count %}
+            <span style="background:#6d3fa8;color:#fff;border-radius:999px;padding:.1rem .5rem;font-size:.72rem;font-weight:800;">{{ pending_discount_count }}</span>
+          {% endif %}
+        </div>
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+{% if messages %}
+  {% for m in messages %}
+  <div class="alert-custom alert-{{ m.tags }}">
+    {{ m }}
+    <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
+  </div>
+  {% endfor %}
+{% endif %}
+
+<div class="billing-layout">
+
+  {# ════ LEFT — Payment list ════ #}
+  <div>
+    <form method="get" id="filter-form">
+      <div class="filter-bar">
+        <span class="filter-label">Filter</span>
+        {{ filter_form.status }}
+        {{ filter_form.date }}
+        {{ filter_form.patient }}
+        <button type="submit" class="btn-filter">Apply</button>
+        <a href="{% url 'payments:list' %}" class="btn-clear-filter">Clear</a>
+      </div>
+    </form>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Receipt #</th>
+            <th>Patient</th>
+            <th>Due</th>
+            <th>Paid</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in payments %}
+          <tr>
+            <td><span class="receipt-code">{{ payment.receipt_number }}</span></td>
+            <td>
+              <div style="font-weight:500;font-size:.87rem;">{{ payment.visit.patient.full_name }}</div>
+              <div style="font-family:'SF Mono','Fira Code',monospace;font-size:.72rem;color:var(--muted);">
+                {{ payment.visit.patient.patient_id }}
+              </div>
+            </td>
+            <td style="font-weight:600;font-variant-numeric:tabular-nums;">
+              ₦{{ payment.effective_amount_due }}
+              {% if payment.discount_amount %}
+                <div class="discount-chip" title="Discount applied">-₦{{ payment.discount_amount }}</div>
+              {% endif %}
+            </td>
+            <td style="font-variant-numeric:tabular-nums;">₦{{ payment.amount_paid }}</td>
+            <td>
+              <span class="status-badge
+                {% if payment.status == 'paid' %}s-paid
+                {% elif payment.status == 'pending' %}s-pending
+                {% elif payment.status == 'failed' %}s-failed
+                {% else %}s-refunded{% endif %}">
+                {{ payment.get_status_display }}
+              </span>
+            </td>
+            <td style="color:var(--muted);font-size:.83rem;white-space:nowrap;">{{ payment.created_at|date:"d M Y" }}</td>
+            <td>
+              <a href="{% url 'payments:detail' payment.pk %}" class="btn-view">
+                View
+                <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="empty-state">
+              <div class="empty-icon">🧾</div>
+              <p style="margin:.25rem 0 0;font-size:.88rem;">No payments found.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if is_paginated %}
+      <div class="pagination-bar">
+        <span class="pagination-info">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} · {{ page_obj.paginator.count }} total
+        </span>
+        <div class="pagination-btns">
+          {% if page_obj.has_previous %}
+            <a class="page-btn" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">← Prev</a>
+          {% endif %}
+          <span class="page-btn current">{{ page_obj.number }}</span>
+          {% if page_obj.has_next %}
+            <a class="page-btn" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next →</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ════ RIGHT — Sidebar ════ #}
+  <div class="right-panel">
+
+    {# ── Summary stats ── #}
+    <div class="panel-card">
+      <div class="panel-card-header">Summary</div>
+      <div class="stats-row">
+        <div class="stat-item">
+          <span class="stat-label">Total payments</span>
+          <span class="stat-value">{{ page_obj.paginator.count|default:payments|length }}</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-label" style="color:var(--success);">Paid</span>
+          <span class="stat-value" style="color:var(--success);">{{ payments|length }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label" style="color:var(--warning);">Pending</span>
+          <span class="stat-value" style="color:var(--warning);">—</span>
+        </div>
+      </div>
+    </div>
+
+    {% if can_create %}
+    {# ── Create new payment ── #}
+    <div class="panel-card" id="create-panel">
+      <div class="panel-card-header">
+        New Payment Record
+        <button onclick="toggleCreate()" id="collapse-btn"
+          style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:1.1rem;padding:0;line-height:1;">−</button>
+      </div>
+      <div class="panel-card-body" id="create-body">
+        <form method="post" action="{% url 'payments:list' %}">
+          {% csrf_token %}
+
+          {% if create_form.non_field_errors %}
+            <div class="alert-custom alert-error" style="margin-bottom:.75rem;font-size:.82rem;">
+              {{ create_form.non_field_errors }}
+            </div>
+          {% endif %}
+
+          <div class="panel-field">
+            <label class="panel-label">Visit</label>
+            {{ create_form.visit }}
+            {% if create_form.visit.errors %}
+              <div class="panel-field-error">{{ create_form.visit.errors }}</div>
+            {% endif %}
+            <div style="margin-top:.3rem;font-size:.76rem;color:var(--muted);">
+              Only visits with services and no existing payment are shown.
+            </div>
+          </div>
+
+          <div class="panel-field">
+            <label class="panel-label">Notes <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+            {{ create_form.notes }}
+          </div>
+
+          <button type="submit" class="btn-create">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Create Invoice
+          </button>
+        </form>
+
+        <p style="margin:.85rem 0 0;font-size:.75rem;color:var(--muted);text-align:center;">
+          Amount due is calculated automatically from visit services.
+        </p>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="readonly-notice">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Only finance staff can create payment records.
+    </div>
+    {% endif %}
+
+    {% if is_admin and pending_discount_count %}
+    {# ── Discount requests alert ── #}
+    <a href="{% url 'payments:discounts' %}" class="discount-alert">
+      <div class="discount-count-pill">{{ pending_discount_count }}</div>
+      <div class="discount-alert-text">
+        <div class="discount-alert-title">Discount requests pending</div>
+        <div class="discount-alert-sub">Tap to review and approve</div>
+      </div>
+      <svg width="14" height="14" fill="none" stroke="#6d3fa8" stroke-width="2.2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+    {% endif %}
+
+  </div>{# end right-panel #}
+</div>
+
+<script>
+function toggleCreate() {
+  const body = document.getElementById('create-body');
+  const btn  = document.getElementById('collapse-btn');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  btn.textContent = open ? '+' : '−';
+}
+{% if show_create_form %}
+// Auto-open if form had errors
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('create-body').style.display = 'block';
+});
+{% endif %}
+</script>
+{% endblock %}

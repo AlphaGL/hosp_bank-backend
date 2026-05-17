@@ -1,0 +1,74 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}Stock Adjustment — Inventory{% endblock %}
+{% block page_title %}Stock Adjustment{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Stock Adjustment</h1>
+        <div class="breadcrumb"><a href="{% url 'inventory:dashboard' %}">Inventory</a> › Adjust</div>
+    </div>
+</div>
+
+<div class="form-card">
+    <p style="color:var(--text-secondary);font-size:13.5px;margin-bottom:20px;padding:12px 16px;background:var(--surface-2);border-radius:var(--radius);border-left:4px solid var(--text-muted);">
+        Use this form to correct stock levels, write off expired or damaged items, process returns, or record inter-department transfers.
+        All adjustments are permanently logged in the ledger.
+    </p>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div style="margin-bottom:20px;padding:12px 16px;background:var(--danger-light);border:1px solid var(--danger);border-radius:var(--radius);color:var(--danger);font-size:13px;">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div class="form-cols">
+            <div class="form-row">
+                <label for="{{ form.item.id_for_label }}">Item *</label>
+                {{ form.item }}
+                {% if form.item.errors %}<ul class="errorlist">{% for e in form.item.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-row">
+                <label for="{{ form.movement_type.id_for_label }}">Adjustment Type *</label>
+                {{ form.movement_type }}
+                {% if form.movement_type.errors %}<ul class="errorlist">{% for e in form.movement_type.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+        </div>
+        <div class="form-cols">
+            <div class="form-row">
+                <label for="{{ form.quantity.id_for_label }}">Quantity *</label>
+                {{ form.quantity }}
+                <div class="help-text">{{ form.quantity.help_text }}</div>
+                {% if form.quantity.errors %}<ul class="errorlist">{% for e in form.quantity.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-row">
+                <label for="{{ form.batch.id_for_label }}">Batch (optional)</label>
+                {{ form.batch }}
+            </div>
+        </div>
+        <div class="form-cols">
+            <div class="form-row">
+                <label for="{{ form.department.id_for_label }}">Department</label>
+                {{ form.department }}
+            </div>
+            <div class="form-row">
+                <label for="{{ form.reference.id_for_label }}">Reference</label>
+                {{ form.reference }}
+            </div>
+        </div>
+        <div class="form-row">
+            <label for="{{ form.notes.id_for_label }}">Notes / Reason</label>
+            {{ form.notes }}
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:8px;">
+            <button type="submit" class="btn btn-warn">Record Adjustment</button>
+            <a href="{% url 'inventory:dashboard' %}" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

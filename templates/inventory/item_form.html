@@ -1,0 +1,107 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}{{ form_title }} — Inventory{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>{{ form_title }}</h1>
+        <div class="breadcrumb">
+            <a href="{% url 'inventory:dashboard' %}">Inventory</a> ›
+            <a href="{% url 'inventory:item-list' %}">Items</a> ›
+            {{ form_title }}
+        </div>
+    </div>
+</div>
+
+<div class="form-card">
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger" style="margin-bottom:20px;padding:12px 16px;background:var(--danger-light);border:1px solid var(--danger);border-radius:var(--radius);color:var(--danger);font-size:13px;">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div class="form-section-title">Identification</div>
+        <div class="form-cols">
+            <div class="form-row">
+                <label for="{{ form.name.id_for_label }}">Name *</label>
+                {{ form.name }}
+                {% if form.name.errors %}<ul class="errorlist">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-row">
+                <label for="{{ form.sku.id_for_label }}">SKU *</label>
+                {{ form.sku }}
+                {% if form.sku.errors %}<ul class="errorlist">{% for e in form.sku.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+        </div>
+        <div class="form-cols">
+            <div class="form-row">
+                <label for="{{ form.category.id_for_label }}">Category *</label>
+                {{ form.category }}
+                {% if form.category.errors %}<ul class="errorlist">{% for e in form.category.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-row">
+                <label for="{{ form.unit.id_for_label }}">Unit of Measure *</label>
+                {{ form.unit }}
+                {% if form.unit.errors %}<ul class="errorlist">{% for e in form.unit.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+        </div>
+        <div class="form-row">
+            <label for="{{ form.description.id_for_label }}">Description</label>
+            {{ form.description }}
+        </div>
+
+        <div class="form-section-title">Location</div>
+        <div class="form-cols">
+            <div class="form-row">
+                <label for="{{ form.department.id_for_label }}">Department</label>
+                {{ form.department }}
+            </div>
+            <div class="form-row">
+                <label for="{{ form.storage_location.id_for_label }}">Storage Location</label>
+                {{ form.storage_location }}
+            </div>
+        </div>
+
+        <div class="form-section-title">Stock Control</div>
+        <div class="form-cols-3">
+            <div class="form-row">
+                <label for="{{ form.reorder_level.id_for_label }}">Reorder Level *</label>
+                {{ form.reorder_level }}
+                <div class="help-text">Alert when stock falls to this level</div>
+                {% if form.reorder_level.errors %}<ul class="errorlist">{% for e in form.reorder_level.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-row">
+                <label for="{{ form.reorder_quantity.id_for_label }}">Reorder Quantity *</label>
+                {{ form.reorder_quantity }}
+                <div class="help-text">Suggested quantity to order</div>
+                {% if form.reorder_quantity.errors %}<ul class="errorlist">{% for e in form.reorder_quantity.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-row">
+                <label for="{{ form.unit_cost.id_for_label }}">Unit Cost (₦)</label>
+                {{ form.unit_cost }}
+                <div class="help-text">Cost price per unit</div>
+            </div>
+        </div>
+
+        <div class="form-section-title">Settings</div>
+        <div class="form-check" style="margin-bottom:24px;">
+            {{ form.is_active }}
+            <label for="{{ form.is_active.id_for_label }}">Active (visible in stock lookups)</label>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:8px;">
+            <button type="submit" class="btn btn-primary">Save Item</button>
+            {% if object %}
+            <a href="{% url 'inventory:item-detail' object.pk %}" class="btn btn-ghost">Cancel</a>
+            {% else %}
+            <a href="{% url 'inventory:item-list' %}" class="btn btn-ghost">Cancel</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}

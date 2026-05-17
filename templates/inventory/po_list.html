@@ -1,0 +1,115 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}Purchase Orders — Inventory{% endblock %}
+{% block page_title %}Purchase Orders{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Purchase Orders</h1>
+        <div class="breadcrumb"><a href="{% url 'inventory:dashboard' %}">Inventory</a> › Purchase Orders</div>
+    </div>
+    <a href="{% url 'inventory:po-create' %}" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+        New Purchase Order
+    </a>
+</div>
+
+<form method="get" class="filter-bar">
+    <div class="filter-group">
+        <label>Status</label>
+        {{ filter_form.status }}
+    </div>
+    <div class="filter-group">
+        <label>Supplier</label>
+        {{ filter_form.supplier }}
+    </div>
+    <div class="filter-group">
+        <label>From</label>
+        {{ filter_form.date_from }}
+    </div>
+    <div class="filter-group">
+        <label>To</label>
+        {{ filter_form.date_to }}
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm btn-filter">Filter</button>
+    <a href="{% url 'inventory:po-list' %}" class="btn btn-ghost btn-sm btn-filter">Clear</a>
+</form>
+
+<div class="data-table-wrap">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>PO Number</th>
+                <th>Supplier</th>
+                <th>Status</th>
+                <th>Ordered</th>
+                <th>Expected</th>
+                <th>Total</th>
+                <th>Raised By</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td class="mono">
+                    <a href="{% url 'inventory:po-detail' order.pk %}" style="color:var(--blue);font-weight:700;text-decoration:none;">
+                        {{ order.po_number }}
+                    </a>
+                </td>
+                <td style="font-weight:500;">{{ order.supplier.name }}</td>
+                <td>
+                    {% if order.status == 'draft' %}
+                        <span class="badge badge-neutral">Draft</span>
+                    {% elif order.status == 'submitted' %}
+                        <span class="badge badge-blue">Submitted</span>
+                    {% elif order.status == 'received' %}
+                        <span class="badge badge-success">Received</span>
+                    {% else %}
+                        <span class="badge badge-danger">Cancelled</span>
+                    {% endif %}
+                </td>
+                <td class="muted">{{ order.ordered_date|date:"d M Y" }}</td>
+                <td class="muted">{{ order.expected_delivery|date:"d M Y"|default:"—" }}</td>
+                <td class="mono">₦{{ order.total_cost|floatformat:2 }}</td>
+                <td class="muted">{{ order.raised_by.get_full_name|default:"—" }}</td>
+                <td>
+                    <a href="{% url 'inventory:po-detail' order.pk %}" class="btn-icon" title="View">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                        <p>No purchase orders found.</p>
+                        <a href="{% url 'inventory:po-create' %}" class="btn btn-primary btn-sm">Create your first PO</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="page-link active">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

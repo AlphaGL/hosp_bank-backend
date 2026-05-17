@@ -1,0 +1,159 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}Stock Alerts — Inventory{% endblock %}
+{% block page_title %}Stock Alerts{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Stock Alerts</h1>
+        <div class="breadcrumb"><a href="{% url 'inventory:dashboard' %}">Inventory</a> › Alerts | Today: {{ today }}</div>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <a href="{% url 'inventory:dispense' %}" class="btn btn-primary btn-sm">Dispense</a>
+        <a href="{% url 'inventory:po-create' %}" class="btn btn-ghost btn-sm">New PO</a>
+    </div>
+</div>
+
+<!-- Out of Stock -->
+{% if out_of_stock %}
+<div class="data-table-wrap" style="margin-bottom:24px;">
+    <div style="padding:14px 20px;border-bottom:1px solid var(--border-light);background:var(--danger-light);">
+        <h3 style="font-size:14px;font-weight:700;color:var(--danger);">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;vertical-align:-2px;margin-right:6px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            Out of Stock ({{ out_of_stock|length }})
+        </h3>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr><th>Item</th><th>SKU</th><th>Category</th><th>Reorder Level</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+            {% for row in out_of_stock %}
+            <tr>
+                <td>
+                    <a href="{% url 'inventory:item-detail' row.item.pk %}" style="color:var(--danger);font-weight:600;text-decoration:none;">{{ row.item.name }}</a>
+                </td>
+                <td class="mono">{{ row.item.sku }}</td>
+                <td><span class="badge badge-neutral">{{ row.item.get_category_display }}</span></td>
+                <td class="muted">{{ row.item.reorder_level }} {{ row.item.unit }}</td>
+                <td>
+                    <a href="{% url 'inventory:batch-create' %}?item={{ row.item.pk }}" class="btn btn-success btn-sm">Receive Stock</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Low Stock -->
+{% if low_stock %}
+<div class="data-table-wrap" style="margin-bottom:24px;">
+    <div style="padding:14px 20px;border-bottom:1px solid var(--border-light);background:var(--warn-light);">
+        <h3 style="font-size:14px;font-weight:700;color:var(--warn);">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;vertical-align:-2px;margin-right:6px"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+            Low Stock ({{ low_stock|length }})
+        </h3>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr><th>Item</th><th>SKU</th><th>On Hand</th><th>Reorder Level</th><th>Reorder Qty</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+            {% for row in low_stock %}
+            <tr>
+                <td>
+                    <a href="{% url 'inventory:item-detail' row.item.pk %}" style="color:var(--warn);font-weight:600;text-decoration:none;">{{ row.item.name }}</a>
+                </td>
+                <td class="mono">{{ row.item.sku }}</td>
+                <td>
+                    <span style="font-weight:700;color:var(--warn);">{{ row.qty }} {{ row.item.unit }}</span>
+                </td>
+                <td class="muted">{{ row.item.reorder_level }} {{ row.item.unit }}</td>
+                <td class="muted">{{ row.item.reorder_quantity }} {{ row.item.unit }}</td>
+                <td>
+                    <a href="{% url 'inventory:batch-create' %}?item={{ row.item.pk }}" class="btn btn-success btn-sm">Receive</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if not out_of_stock and not low_stock %}
+<div class="detail-card" style="text-align:center;padding:48px;">
+    <svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px;color:var(--success);margin:0 auto 12px;display:block;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    <h2 style="font-size:18px;font-weight:700;color:var(--success);margin-bottom:6px;">All stock levels are healthy</h2>
+    <p style="color:var(--text-muted);">No items are out of stock or below their reorder level.</p>
+</div>
+{% endif %}
+
+<!-- Expiring Soon -->
+{% if expiring_soon %}
+<div class="data-table-wrap" style="margin-bottom:24px;">
+    <div style="padding:14px 20px;border-bottom:1px solid var(--border-light);">
+        <h3 style="font-size:14px;font-weight:700;color:var(--warn);">
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;vertical-align:-2px;margin-right:6px"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
+            Expiring Within 90 Days ({{ expiring_soon|length }})
+        </h3>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr><th>Item</th><th>Batch #</th><th>Supplier</th><th>Expiry Date</th><th>Days Left</th></tr>
+        </thead>
+        <tbody>
+            {% for batch in expiring_soon %}
+            <tr>
+                <td>
+                    <a href="{% url 'inventory:item-detail' batch.item.pk %}" style="color:var(--text-primary);font-weight:600;text-decoration:none;">{{ batch.item.name }}</a>
+                </td>
+                <td class="mono">{{ batch.batch_number|default:"—" }}</td>
+                <td class="muted">{{ batch.supplier|default:"—" }}</td>
+                <td>{{ batch.expiry_date|date:"d M Y" }}</td>
+                <td>
+                    {% with days=batch.days_to_expiry %}
+                    <span class="badge {% if days <= 30 %}badge-danger{% else %}badge-warn{% endif %}">
+                        {{ days }} days
+                    </span>
+                    {% endwith %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Expired Batches -->
+{% if expired %}
+<div class="data-table-wrap">
+    <div style="padding:14px 20px;border-bottom:1px solid var(--border-light);background:var(--danger-light);">
+        <h3 style="font-size:14px;font-weight:700;color:var(--danger);">
+            Expired Batches Requiring Write-Off ({{ expired|length }})
+        </h3>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr><th>Item</th><th>Batch #</th><th>Supplier</th><th>Expired On</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+            {% for batch in expired %}
+            <tr>
+                <td>
+                    <a href="{% url 'inventory:item-detail' batch.item.pk %}" style="color:var(--danger);font-weight:600;text-decoration:none;">{{ batch.item.name }}</a>
+                </td>
+                <td class="mono">{{ batch.batch_number|default:"—" }}</td>
+                <td class="muted">{{ batch.supplier|default:"—" }}</td>
+                <td><span class="badge badge-danger">{{ batch.expiry_date|date:"d M Y" }}</span></td>
+                <td>
+                    <a href="{% url 'inventory:adjust' %}?item={{ batch.item.pk }}" class="btn btn-danger btn-sm">Write Off</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

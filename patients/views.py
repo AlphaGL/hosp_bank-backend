@@ -93,15 +93,65 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+
+        # ── Core patient / visit stats ────────────────────────────────────
+        today = timezone.now().date()
         ctx['total_patients'] = Patient.objects.count()
-        ctx['today_visits'] = Visit.objects.filter(visit_date=timezone.now().date()).count()
+        ctx['today_visits'] = Visit.objects.filter(visit_date=today).count()
         ctx['pending_visits'] = Visit.objects.filter(
             status__in=[Visit.STATUS_REGISTERED, Visit.STATUS_AWAITING_PAYMENT]
+        ).count()
+        ctx['completed_today'] = Visit.objects.filter(
+            visit_date=today, status=Visit.STATUS_COMPLETED
         ).count()
         ctx['recent_visits'] = (
             Visit.objects.select_related('patient', 'created_by')
             .order_by('-created_at')[:10]
         )
+
+        # ── Services stats ────────────────────────────────────────────────
+        try:
+            from services.models import ServiceCatalogue, VisitService
+            ctx['total_services'] = ServiceCatalogue.objects.filter(is_active=True).count()
+            ctx['pending_service_requests'] = VisitService.objects.filter(status='pending').count()
+
+            visits_with_services = VisitService.objects.values_list('visit_id', flat=True).distinct()
+            ctx['visits_without_services'] = (
+                Visit.objects
+                .filter(visit_date=today)
+                .exclude(status__in=['completed', 'cancelled'])
+                .exclude(pk__in=visits_with_services)
+                .select_related('patient')
+                .order_by('-created_at')
+            )
+        except Exception:
+            ctx['total_services'] = 0
+            ctx['pending_service_requests'] = 0
+            ctx['visits_without_services'] = []
+
+        # ── Inventory stats (pulled via utils so no tight import coupling) ─
+        try:
+            from inventory.utils import get_low_stock_items, get_expiring_batches
+            from inventory.models import ConsumableItem, PurchaseOrder
+
+            low_stock = get_low_stock_items()
+            ctx['low_stock_items'] = low_stock
+            ctx['low_stock_count'] = len(low_stock)
+
+            ctx['expiring_soon_count'] = get_expiring_batches(days=90).count()
+
+            ctx['inv_total_items'] = ConsumableItem.objects.filter(is_active=True).count()
+
+            ctx['pending_pos'] = PurchaseOrder.objects.filter(
+                status__in=[PurchaseOrder.STATUS_DRAFT, PurchaseOrder.STATUS_SUBMITTED]
+            ).count()
+        except Exception:
+            ctx['low_stock_items'] = []
+            ctx['low_stock_count'] = 0
+            ctx['expiring_soon_count'] = 0
+            ctx['inv_total_items'] = 0
+            ctx['pending_pos'] = 0
+
         return ctx
 
 
@@ -188,7 +238,6 @@ class PatientDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        # Replaces the visits() custom action on PatientViewSet
         ctx['visits'] = self.object.visits.select_related('created_by').order_by('-created_at')
         return ctx
 
@@ -264,7 +313,7 @@ class VisitDetailView(LoginRequiredMixin, DetailView):
         ctx['status_form'] = VisitStatusForm(initial={'status': self.object.status})
         services = self.object.visit_services.select_related('service').all()
         ctx['services'] = services
-        ctx['services_total'] = sum(vs.price_at_booking for vs in services)  # ← add this
+        ctx['services_total'] = sum(vs.price_at_booking for vs in services)
         return ctx
 
 
@@ -277,7 +326,6 @@ class VisitCreateView(LoginRequiredMixin, CreateView):
         return reverse('patients:visit-detail', kwargs={'pk': self.object.pk})
 
     def get_initial(self):
-        # Pre-select patient if ?patient=<pk> is in the URL (from patient detail page)
         initial = super().get_initial()
         patient_pk = self.request.GET.get('patient')
         if patient_pk:

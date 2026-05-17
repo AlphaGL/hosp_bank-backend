@@ -1,0 +1,584 @@
+{% extends "base.html" %}
+{% block title %}Activity Log — MediCore{% endblock %}
+{% block page_title %}Activity Log{% endblock %}
+{% block nav_activity %}active{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* ── Hero ──────────────────────────────────────────────────────────────── */
+    .log-hero {
+        background: linear-gradient(135deg, #0f172a 0%, #1a2f50 60%, #1a56db 100%);
+        border-radius: var(--radius-xl);
+        padding: 26px 30px;
+        margin-bottom: 24px;
+        color: #fff;
+        display: flex; align-items: center; justify-content: space-between; gap: 16px;
+        position: relative; overflow: hidden;
+    }
+    .log-hero::after {
+        content: ''; position: absolute; right: -40px; top: -40px;
+        width: 220px; height: 220px;
+        background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+    .log-hero-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 3px; }
+    .log-hero-sub { font-size: 12.5px; opacity: .72; }
+
+    /* ── Summary cards ─────────────────────────────────────────────────────── */
+    .log-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .log-sum-card {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 16px 18px;
+        box-shadow: var(--shadow-sm);
+        position: relative; overflow: hidden;
+    }
+    .log-sum-card .accent {
+        position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    .log-sum-label { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+    .log-sum-value { font-size: 24px; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -1px; }
+    .log-sum-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+    /* ── Filters bar ───────────────────────────────────────────────────────── */
+    .filter-bar {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 16px 20px;
+        margin-bottom: 18px;
+        box-shadow: var(--shadow-sm);
+    }
+    .filter-row {
+        display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; }
+    .filter-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); }
+    .filter-input, .filter-select {
+        height: 36px; border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 0 12px;
+        font-size: 13px; color: var(--text-primary);
+        background: var(--white); outline: none;
+        font-family: inherit;
+        transition: border-color .15s;
+    }
+    .filter-input { min-width: 200px; }
+    .filter-select { min-width: 140px; }
+    .filter-input:focus, .filter-select:focus { border-color: var(--blue); }
+    .filter-btn {
+        height: 36px; padding: 0 18px;
+        background: var(--blue); color: #fff;
+        border: none; border-radius: var(--radius);
+        font-size: 13px; font-weight: 600;
+        cursor: pointer; font-family: inherit;
+        display: inline-flex; align-items: center; gap: 6px;
+        transition: background .15s;
+    }
+    .filter-btn:hover { background: var(--blue-dim); }
+    .filter-btn-reset {
+        height: 36px; padding: 0 14px;
+        background: var(--surface-2); color: var(--text-secondary);
+        border: 1px solid var(--border); border-radius: var(--radius);
+        font-size: 13px; font-weight: 500;
+        cursor: pointer; font-family: inherit;
+        text-decoration: none; display: inline-flex; align-items: center;
+        transition: background .15s;
+    }
+    .filter-btn-reset:hover { background: var(--border); }
+
+    /* Active filter pills */
+    .active-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .filter-pill {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: var(--blue-light); color: var(--blue);
+        border-radius: 20px; font-size: 11px; font-weight: 600;
+        padding: 3px 10px;
+    }
+
+    /* ── Category breakdown chips ──────────────────────────────────────────── */
+    .cat-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .cat-chip {
+        display: inline-flex; align-items: center; gap: 5px;
+        background: var(--white); border: 1px solid var(--border);
+        border-radius: 20px; padding: 5px 12px;
+        font-size: 12px; font-weight: 600; color: var(--text-secondary);
+        box-shadow: var(--shadow-sm);
+    }
+    .cat-chip-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    /* ── Log table ─────────────────────────────────────────────────────────── */
+    .log-table-wrap {
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .log-table thead th {
+        background: var(--surface);
+        padding: 11px 14px;
+        text-align: left;
+        font-size: 10px; font-weight: 700;
+        letter-spacing: .5px; text-transform: uppercase;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--border);
+        white-space: nowrap;
+    }
+    .log-table tbody tr {
+        border-bottom: 1px solid var(--border-light);
+        transition: background .12s;
+        cursor: pointer;
+    }
+    .log-table tbody tr:last-child { border-bottom: none; }
+    .log-table tbody tr:hover { background: var(--surface); }
+    .log-table td { padding: 10px 14px; vertical-align: middle; color: var(--text-secondary); }
+
+    /* Level dot */
+    .level-dot {
+        width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block;
+    }
+    .level-info    { background: var(--blue); }
+    .level-success { background: var(--success); }
+    .level-warning { background: var(--warn); }
+    .level-error   { background: var(--danger); }
+
+    .level-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 2px 9px; border-radius: 20px;
+        font-size: 11px; font-weight: 700;
+    }
+    .level-badge.info    { background: var(--blue-light); color: var(--blue); }
+    .level-badge.success { background: var(--success-light); color: var(--success); }
+    .level-badge.warning { background: var(--warn-light); color: var(--warn); }
+    .level-badge.error   { background: var(--danger-light); color: var(--danger); }
+
+    /* Category badge */
+    .cat-badge {
+        display: inline-block; padding: 2px 9px;
+        border-radius: 20px; font-size: 11px; font-weight: 600;
+        background: var(--surface-2); color: var(--text-secondary);
+    }
+    .cat-auth      { background: var(--purple-soft); color: var(--purple); }
+    .cat-patient   { background: var(--blue-light); color: var(--blue); }
+    .cat-billing   { background: var(--success-light); color: var(--success); }
+    .cat-inventory { background: var(--warn-light); color: var(--warn); }
+    .cat-staff     { background: var(--teal-light); color: var(--teal); }
+    .cat-visit     { background: var(--blue-soft); color: var(--blue-mid); }
+    .cat-discount  { background: var(--warn-soft); color: var(--warn); }
+    .cat-system    { background: var(--surface-2); color: var(--text-muted); }
+
+    /* Actor cell */
+    .actor-cell { display: flex; align-items: center; gap: 8px; }
+    .actor-avatar {
+        width: 28px; height: 28px; border-radius: 50%;
+        background: var(--blue-light); color: var(--blue);
+        font-size: 10px; font-weight: 800;
+        display: grid; place-items: center; flex-shrink: 0;
+        text-transform: uppercase;
+    }
+    .actor-name { font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+    .actor-system { color: var(--text-muted); font-style: italic; font-size: 12px; }
+
+    /* Timestamp */
+    .ts-date { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+    .ts-time { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+    /* Action + description */
+    .action-label { font-weight: 600; color: var(--text-primary); }
+    .action-desc { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .action-obj {
+        font-size: 10px; color: var(--text-muted);
+        display: inline-flex; align-items: center; gap: 3px; margin-top: 2px;
+    }
+
+    /* ── Detail modal ──────────────────────────────────────────────────────── */
+    .log-modal-backdrop {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.35); z-index: 300;
+        backdrop-filter: blur(2px);
+        align-items: center; justify-content: center;
+    }
+    .log-modal-backdrop.open { display: flex; }
+    .log-modal {
+        background: var(--white); border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg); width: 100%; max-width: 520px;
+        margin: 20px; max-height: 80vh; overflow-y: auto;
+    }
+    .log-modal-head {
+        padding: 20px 24px 16px;
+        border-bottom: 1px solid var(--border);
+        display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    }
+    .log-modal-title { font-size: 15px; font-weight: 700; }
+    .log-modal-close {
+        background: none; border: none; cursor: pointer;
+        color: var(--text-muted); padding: 4px; border-radius: 6px;
+        display: grid; place-items: center;
+    }
+    .log-modal-close:hover { background: var(--surface-2); color: var(--text-primary); }
+    .log-modal-body { padding: 20px 24px; }
+    .modal-row {
+        display: flex; gap: 12px; margin-bottom: 14px;
+        font-size: 13px;
+    }
+    .modal-row-label { width: 110px; flex-shrink: 0; font-weight: 700; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .4px; padding-top: 1px; }
+    .modal-row-val { color: var(--text-primary); flex: 1; word-break: break-word; }
+
+    /* ── Pagination ────────────────────────────────────────────────────────── */
+    .pagination-wrap {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border);
+        font-size: 12px; color: var(--text-muted);
+        flex-wrap: wrap; gap: 8px;
+    }
+    .pagination { display: flex; gap: 4px; align-items: center; }
+    .page-btn {
+        min-width: 32px; height: 32px; padding: 0 8px;
+        border: 1px solid var(--border); border-radius: var(--radius);
+        background: var(--white); color: var(--text-secondary);
+        font-size: 12px; font-weight: 600; cursor: pointer;
+        text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+        transition: background .14s, border-color .14s;
+    }
+    .page-btn:hover { background: var(--surface); border-color: var(--blue); color: var(--blue); }
+    .page-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .page-btn[disabled], .page-btn.disabled { opacity: .4; pointer-events: none; }
+
+    /* ── Responsive ────────────────────────────────────────────────────────── */
+    .col-ip { display: table-cell; }
+    .col-obj { display: table-cell; }
+    @media (max-width: 900px) {
+        .col-ip, .col-obj { display: none; }
+        .filter-input { min-width: 140px; }
+    }
+    @media (max-width: 600px) {
+        .log-hero { flex-direction: column; align-items: flex-start; }
+        .log-summary { grid-template-columns: repeat(2, 1fr); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<div class="log-hero">
+    <div>
+        <div class="log-hero-title">Activity Log</div>
+        <div class="log-hero-sub">Immutable audit trail — every meaningful action on the platform</div>
+    </div>
+    <a href="{% url 'sitemap:stats' %}" style="display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.22); color:#fff; padding:9px 18px; border-radius:10px; font-size:13px; font-weight:600; text-decoration:none; white-space:nowrap;">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+        Platform Stats
+    </a>
+</div>
+
+<!-- ── Summary cards ────────────────────────────────────────────────────── -->
+<div class="log-summary">
+    <div class="log-sum-card">
+        <div class="accent" style="background:var(--blue);"></div>
+        <div class="log-sum-label">Total Logs</div>
+        <div class="log-sum-value">{{ logs_total }}</div>
+        <div class="log-sum-sub">All time</div>
+    </div>
+    <div class="log-sum-card">
+        <div class="accent" style="background:var(--teal);"></div>
+        <div class="log-sum-label">Today</div>
+        <div class="log-sum-value">{{ logs_today }}</div>
+        <div class="log-sum-sub">{{ today|date:"j N Y" }}</div>
+    </div>
+    <div class="log-sum-card">
+        <div class="accent" style="background:var(--warn);"></div>
+        <div class="log-sum-label">Warnings Today</div>
+        <div class="log-sum-value">{{ logs_warnings_today }}</div>
+        <div class="log-sum-sub">Needs attention</div>
+    </div>
+    <div class="log-sum-card">
+        <div class="accent" style="background:var(--danger);"></div>
+        <div class="log-sum-label">Errors Today</div>
+        <div class="log-sum-value">{{ logs_errors_today }}</div>
+        <div class="log-sum-sub">Requires review</div>
+    </div>
+</div>
+
+<!-- ── 7-day category breakdown ─────────────────────────────────────────── -->
+{% if category_counts %}
+<div class="cat-chips">
+    {% for cat in category_counts %}
+    <div class="cat-chip">
+        <span class="cat-chip-dot" style="background:{% if cat.category == 'auth' %}var(--purple){% elif cat.category == 'patient' %}var(--blue){% elif cat.category == 'billing' %}var(--success){% elif cat.category == 'inventory' %}var(--warn){% elif cat.category == 'staff' %}var(--teal){% else %}var(--text-muted){% endif %};"></span>
+        {{ cat.category|capfirst }} — {{ cat.count }}
+    </div>
+    {% endfor %}
+    <div class="cat-chip" style="background:var(--surface-2); color:var(--text-muted);">Last 7 days</div>
+</div>
+{% endif %}
+
+<!-- ── Filters ──────────────────────────────────────────────────────────── -->
+<div class="filter-bar">
+    <form method="get" action="">
+        <div class="filter-row">
+            <div class="filter-group">
+                <label class="filter-label" for="q">Search</label>
+                <input type="text" id="q" name="q" class="filter-input" placeholder="Action, description, object…" value="{{ filters.q }}">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label" for="category">Category</label>
+                <select name="category" id="category" class="filter-select">
+                    <option value="">All categories</option>
+                    {% for val, label in category_choices %}
+                    <option value="{{ val }}" {% if filters.category == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label" for="level">Level</label>
+                <select name="level" id="level" class="filter-select">
+                    <option value="">All levels</option>
+                    {% for val, label in level_choices %}
+                    <option value="{{ val }}" {% if filters.level == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label" for="date">Date</label>
+                <input type="date" name="date" id="date" class="filter-input" style="min-width:140px;" value="{{ filters.date }}">
+            </div>
+            <button type="submit" class="filter-btn">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                Filter
+            </button>
+            {% if filters.q or filters.category or filters.level or filters.date %}
+            <a href="{% url 'sitemap:activity_log' %}" class="filter-btn-reset">Clear</a>
+            {% endif %}
+        </div>
+
+        <!-- Active filter pills -->
+        {% if filters.q or filters.category or filters.level or filters.date %}
+        <div class="active-filters">
+            {% if filters.q %}<span class="filter-pill">Search: "{{ filters.q }}"</span>{% endif %}
+            {% if filters.category %}<span class="filter-pill">Category: {{ filters.category }}</span>{% endif %}
+            {% if filters.level %}<span class="filter-pill">Level: {{ filters.level }}</span>{% endif %}
+            {% if filters.date %}<span class="filter-pill">Date: {{ filters.date }}</span>{% endif %}
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<!-- ── Log table ────────────────────────────────────────────────────────── -->
+<div class="log-table-wrap">
+    {% if logs %}
+    <table class="log-table">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Actor</th>
+                <th>Category</th>
+                <th>Level</th>
+                <th>Action &amp; Description</th>
+                <th class="col-obj">Object</th>
+                <th class="col-ip">IP</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr onclick="openLogDetail(this)"
+                data-ts="{{ log.timestamp|date:'j N Y, H:i:s' }}"
+                data-actor="{% if log.actor %}{{ log.actor.get_full_name }}{% else %}System / Anonymous{% endif %}"
+                data-category="{{ log.get_category_display }}"
+                data-level="{{ log.level }}"
+                data-action="{{ log.action }}"
+                data-description="{{ log.description|default:'—' }}"
+                data-object-type="{{ log.object_type|default:'—' }}"
+                data-object-id="{{ log.object_id|default:'—' }}"
+                data-object-repr="{{ log.object_repr|default:'—' }}"
+                data-ip="{{ log.ip_address|default:'—' }}"
+                data-ua="{{ log.user_agent|default:'—' }}"
+            >
+                <td>
+                    <div class="ts-date">{{ log.timestamp|date:"j N Y" }}</div>
+                    <div class="ts-time">{{ log.timestamp|date:"H:i:s" }}</div>
+                </td>
+                <td>
+                    <div class="actor-cell">
+                        {% if log.actor %}
+                        <div class="actor-avatar">{{ log.actor.first_name|first|upper }}{{ log.actor.last_name|first|upper }}</div>
+                        <span class="actor-name">{{ log.actor.get_full_name }}</span>
+                        {% else %}
+                        <span class="actor-system">System</span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                    <span class="cat-badge cat-{{ log.category }}">{{ log.get_category_display }}</span>
+                </td>
+                <td>
+                    <span class="level-badge {{ log.level }}">
+                        <span class="level-dot level-{{ log.level }}"></span>
+                        {{ log.level|capfirst }}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-label">{{ log.action }}</div>
+                    {% if log.description %}
+                    <div class="action-desc">{{ log.description|truncatechars:80 }}</div>
+                    {% endif %}
+                </td>
+                <td class="col-obj">
+                    {% if log.object_type %}
+                    <div class="action-obj">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="10" height="10"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                        {{ log.object_type }} #{{ log.object_id }}
+                    </div>
+                    {% else %}—{% endif %}
+                </td>
+                <td class="col-ip" style="font-size:11px; color:var(--text-muted); font-variant-numeric: tabular-nums;">
+                    {{ log.ip_address|default:"—" }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination-wrap">
+        <span>
+            Showing {{ logs.start_index }}–{{ logs.end_index }} of {{ paginator.count }} entries
+        </span>
+        <div class="pagination">
+            {% if logs.has_previous %}
+            <a href="?{% if filters.q %}q={{ filters.q }}&{% endif %}{% if filters.category %}category={{ filters.category }}&{% endif %}{% if filters.level %}level={{ filters.level }}&{% endif %}{% if filters.date %}date={{ filters.date }}&{% endif %}page={{ logs.previous_page_number }}" class="page-btn">‹ Prev</a>
+            {% else %}
+            <span class="page-btn disabled">‹ Prev</span>
+            {% endif %}
+
+            {% for num in paginator.page_range %}
+            {% if num == logs.number %}
+            <span class="page-btn active">{{ num }}</span>
+            {% elif num == 1 or num == paginator.num_pages or num|add:"-2" <= logs.number and logs.number <= num|add:"2" %}
+            <a href="?{% if filters.q %}q={{ filters.q }}&{% endif %}{% if filters.category %}category={{ filters.category }}&{% endif %}{% if filters.level %}level={{ filters.level }}&{% endif %}{% if filters.date %}date={{ filters.date }}&{% endif %}page={{ num }}" class="page-btn">{{ num }}</a>
+            {% elif num == 2 or num == paginator.num_pages|add:"-1" %}
+            <span class="page-btn disabled" style="pointer-events:none; border:none; background:none;">…</span>
+            {% endif %}
+            {% endfor %}
+
+            {% if logs.has_next %}
+            <a href="?{% if filters.q %}q={{ filters.q }}&{% endif %}{% if filters.category %}category={{ filters.category }}&{% endif %}{% if filters.level %}level={{ filters.level }}&{% endif %}{% if filters.date %}date={{ filters.date }}&{% endif %}page={{ logs.next_page_number }}" class="page-btn">Next ›</a>
+            {% else %}
+            <span class="page-btn disabled">Next ›</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% else %}
+    <div style="text-align:center; padding:56px 24px; color:var(--text-muted);">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48" style="opacity:.18; margin-bottom:12px; display:block; margin-inline:auto;">
+            <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15.01l1.41 1.41L11 14.84l1.59 1.58L14 15.01 11 12z"/>
+        </svg>
+        <p style="font-size:14px; font-weight:600; margin-bottom:6px;">No log entries found</p>
+        <p style="font-size:13px;">
+            {% if filters.q or filters.category or filters.level or filters.date %}
+            Try adjusting your filters, or <a href="{% url 'sitemap:activity_log' %}" style="color:var(--blue);">clear them</a>.
+            {% else %}
+            No activity has been logged yet.
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ── Detail modal ─────────────────────────────────────────────────────── -->
+<div class="log-modal-backdrop" id="log-modal-backdrop" onclick="closeLogDetail(event)">
+    <div class="log-modal" id="log-modal">
+        <div class="log-modal-head">
+            <div>
+                <div class="log-modal-title" id="modal-action">—</div>
+                <div style="margin-top:4px;" id="modal-level-badge"></div>
+            </div>
+            <button class="log-modal-close" onclick="closeLogDetail()">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+        </div>
+        <div class="log-modal-body">
+            <div class="modal-row">
+                <div class="modal-row-label">Timestamp</div>
+                <div class="modal-row-val" id="modal-ts">—</div>
+            </div>
+            <div class="modal-row">
+                <div class="modal-row-label">Actor</div>
+                <div class="modal-row-val" id="modal-actor">—</div>
+            </div>
+            <div class="modal-row">
+                <div class="modal-row-label">Category</div>
+                <div class="modal-row-val" id="modal-category">—</div>
+            </div>
+            <div class="modal-row">
+                <div class="modal-row-label">Description</div>
+                <div class="modal-row-val" id="modal-description">—</div>
+            </div>
+            <div class="modal-row">
+                <div class="modal-row-label">Object Type</div>
+                <div class="modal-row-val" id="modal-object-type">—</div>
+            </div>
+            <div class="modal-row">
+                <div class="modal-row-label">Object ID</div>
+                <div class="modal-row-val" id="modal-object-id">—</div>
+            </div>
+            <div class="modal-row">
+                <div class="modal-row-label">Object Repr</div>
+                <div class="modal-row-val" id="modal-object-repr">—</div>
+            </div>
+            <div class="modal-row">
+                <div class="modal-row-label">IP Address</div>
+                <div class="modal-row-val" id="modal-ip">—</div>
+            </div>
+            <div class="modal-row" style="margin-bottom:0;">
+                <div class="modal-row-label">User Agent</div>
+                <div class="modal-row-val" id="modal-ua" style="font-size:11px; word-break:break-all;">—</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function openLogDetail(row) {
+    const d = row.dataset;
+    document.getElementById('modal-action').textContent     = d.action;
+    document.getElementById('modal-ts').textContent         = d.ts;
+    document.getElementById('modal-actor').textContent      = d.actor;
+    document.getElementById('modal-category').textContent   = d.category;
+    document.getElementById('modal-description').textContent = d.description;
+    document.getElementById('modal-object-type').textContent = d.objectType;
+    document.getElementById('modal-object-id').textContent  = d.objectId;
+    document.getElementById('modal-object-repr').textContent = d.objectRepr;
+    document.getElementById('modal-ip').textContent         = d.ip;
+    document.getElementById('modal-ua').textContent         = d.ua;
+
+    const lb = document.getElementById('modal-level-badge');
+    lb.innerHTML = `<span class="level-badge ${d.level}"><span class="level-dot level-${d.level}"></span>${d.level.charAt(0).toUpperCase()+d.level.slice(1)}</span>`;
+
+    document.getElementById('log-modal-backdrop').classList.add('open');
+}
+
+function closeLogDetail(e) {
+    if (!e || e.target === document.getElementById('log-modal-backdrop')) {
+        document.getElementById('log-modal-backdrop').classList.remove('open');
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeLogDetail();
+});
+</script>
+{% endblock %}

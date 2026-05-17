@@ -27,6 +27,17 @@ class Payment(models.Model):
     visit = models.OneToOneField(Visit, on_delete=models.CASCADE, related_name='payment')
     amount_due = models.DecimalField(max_digits=12, decimal_places=2)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    # Discount fields — populated once a DiscountRequest is approved
+    discount_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0,
+        help_text='Approved discount deducted from amount_due',
+    )
+    discount_approved_by = models.ForeignKey(
+        'patients.Staff', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='approved_payment_discounts',
+    )
+
     payment_method = models.CharField(max_length=20, choices=METHOD_CHOICES, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     transaction_ref = models.CharField(max_length=100, blank=True, help_text='Bank/card transaction reference')
@@ -58,9 +69,58 @@ class Payment(models.Model):
         return result['total'] or 0
 
     @property
+    def effective_amount_due(self):
+        """Amount due after any approved discount."""
+        return max(self.amount_due - self.discount_amount, 0)
+
+    @property
     def balance(self):
-        return self.amount_due - self.amount_paid
+        return self.effective_amount_due - self.amount_paid
 
     @property
     def is_fully_paid(self):
-        return self.amount_paid >= self.amount_due
+        return self.amount_paid >= self.effective_amount_due
+
+
+class DiscountRequest(models.Model):
+    """
+    A finance staff member requests a discount for a Payment.
+    An admin must approve or reject it before it takes effect.
+    """
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_REJECTED = 'rejected'
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_REJECTED, 'Rejected'),
+    ]
+
+    payment = models.ForeignKey(
+        Payment, on_delete=models.CASCADE, related_name='discount_requests',
+    )
+    requested_by = models.ForeignKey(
+        'patients.Staff', on_delete=models.CASCADE, related_name='requested_discounts',
+    )
+    discount_amount = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        help_text='Flat discount amount in naira',
+    )
+    reason = models.TextField(help_text='Justification for the discount')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    reviewed_by = models.ForeignKey(
+        'patients.Staff', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='reviewed_discounts',
+    )
+    reviewer_note = models.TextField(blank=True, help_text='Admin note when approving or rejecting')
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return (
+            f"Discount ₦{self.discount_amount} on {self.payment.receipt_number} "
+            f"[{self.get_status_display()}]"
+        )

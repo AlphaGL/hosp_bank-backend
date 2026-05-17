@@ -1,0 +1,145 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}{{ form_title }} — Purchase Orders{% endblock %}
+{% block page_title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>{{ form_title }}</h1>
+        <div class="breadcrumb">
+            <a href="{% url 'inventory:dashboard' %}">Inventory</a> ›
+            <a href="{% url 'inventory:po-list' %}">Purchase Orders</a> ›
+            {{ form_title }}
+        </div>
+    </div>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div style="margin-bottom:20px;padding:12px 16px;background:var(--danger-light);border:1px solid var(--danger);border-radius:var(--radius);color:var(--danger);font-size:13px;">
+        {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <!-- PO Header -->
+    <div class="form-card" style="max-width:100%;margin-bottom:24px;">
+        <div class="form-section-title" style="margin-top:0">Order Header</div>
+        <div class="form-cols">
+            <div class="form-row">
+                <label for="{{ form.supplier.id_for_label }}">Supplier *</label>
+                {{ form.supplier }}
+                {% if form.supplier.errors %}<ul class="errorlist">{% for e in form.supplier.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-row">
+                <label for="{{ form.ordered_date.id_for_label }}">Order Date *</label>
+                {{ form.ordered_date }}
+                {% if form.ordered_date.errors %}<ul class="errorlist">{% for e in form.ordered_date.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+        </div>
+        <div class="form-cols">
+            <div class="form-row">
+                <label for="{{ form.expected_delivery.id_for_label }}">Expected Delivery</label>
+                {{ form.expected_delivery }}
+            </div>
+        </div>
+        <div class="form-row">
+            <label for="{{ form.notes.id_for_label }}">Notes</label>
+            {{ form.notes }}
+        </div>
+    </div>
+
+    <!-- Line Items -->
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:24px;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;">
+            <h3 style="font-size:15px;font-weight:700;">Line Items</h3>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="addLine()">+ Add Line</button>
+        </div>
+
+        {{ line_formset.management_form }}
+
+        {% if line_formset.non_form_errors %}
+        <div style="margin:12px 20px;padding:10px 14px;background:var(--danger-light);border:1px solid var(--danger);border-radius:var(--radius);color:var(--danger);font-size:13px;">
+            {{ line_formset.non_form_errors }}
+        </div>
+        {% endif %}
+
+        <div id="line-items-container">
+            {% for line_form in line_formset %}
+            <div class="po-line {% if line_form.instance.pk %}has-data{% endif %}" style="padding:16px 20px;border-bottom:1px solid var(--border-light);">
+                {{ line_form.id }}
+                {% if line_form.non_field_errors %}
+                <div style="margin-bottom:10px;color:var(--danger);font-size:12px;">{{ line_form.non_field_errors }}</div>
+                {% endif %}
+                <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:12px;align-items:end;">
+                    <div class="form-row" style="margin:0;">
+                        {% if forloop.first %}<label>Item *</label>{% endif %}
+                        {{ line_form.item }}
+                        {% if line_form.item.errors %}<ul class="errorlist">{% for e in line_form.item.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="form-row" style="margin:0;">
+                        {% if forloop.first %}<label>Qty Ordered *</label>{% endif %}
+                        {{ line_form.quantity_ordered }}
+                        {% if line_form.quantity_ordered.errors %}<ul class="errorlist">{% for e in line_form.quantity_ordered.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="form-row" style="margin:0;">
+                        {% if forloop.first %}<label>Unit Cost (₦)</label>{% endif %}
+                        {{ line_form.unit_cost }}
+                    </div>
+                    <div class="form-row" style="margin:0;">
+                        {% if forloop.first %}<label>Batch #</label>{% endif %}
+                        {{ line_form.batch_number }}
+                    </div>
+                    <div class="form-row" style="margin:0;">
+                        {% if forloop.first %}<label>Expiry Date</label>{% endif %}
+                        {{ line_form.expiry_date }}
+                    </div>
+                    <div style="{% if not forloop.first %}margin-top:0{% else %}margin-top:20px{% endif %}">
+                        {% if line_form.DELETE %}
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;" title="Remove this line">
+                            {{ line_form.DELETE }}
+                            <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;color:var(--danger);"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+                        </label>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div style="display:flex;gap:12px;">
+        <button type="submit" class="btn btn-primary">Save Purchase Order</button>
+        <a href="{% url 'inventory:po-list' %}" class="btn btn-ghost">Cancel</a>
+    </div>
+</form>
+
+<script>
+function addLine() {
+    const container = document.getElementById('line-items-container');
+    const totalForms = document.getElementById('id_lines-TOTAL_FORMS');
+    const count = parseInt(totalForms.value);
+    // Clone last line and reset values
+    const lines = container.querySelectorAll('.po-line');
+    if (!lines.length) return;
+    const newLine = lines[lines.length - 1].cloneNode(true);
+    newLine.querySelectorAll('input, select').forEach(el => {
+        const name = el.name.replace(/-\d+-/, `-${count}-`);
+        const id   = el.id.replace(/-\d+-/, `-${count}-`);
+        el.name = name;
+        el.id   = id;
+        if (el.type !== 'checkbox') el.value = '';
+        else el.checked = false;
+    });
+    newLine.querySelectorAll('label[for]').forEach(el => {
+        el.setAttribute('for', el.getAttribute('for').replace(/-\d+-/, `-${count}-`));
+    });
+    // Remove header labels from subsequent lines
+    newLine.querySelectorAll('label:not([for])').forEach(el => el.remove());
+    container.appendChild(newLine);
+    totalForms.value = count + 1;
+}
+</script>
+{% endblock %}

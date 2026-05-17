@@ -1,162 +1,472 @@
 {% extends "base.html" %}
 {% block title %}Payment {{ payment.receipt_number }}{% endblock %}
 
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #0f0e0d; --paper: #f7f5f2; --card: #ffffff;
+  --accent: #c8501a; --accent-light: #f4e8e1;
+  --muted: #7a7570; --border: #e5e2dd;
+  --success: #2a7d4f; --success-bg: #e6f4ed;
+  --warning: #b07a10; --warning-bg: #fdf3dc;
+  --info: #1a6da8;   --info-bg: #e1eef8;
+  --danger: #b91c1c; --danger-bg: #fee2e2;
+  --purple: #6d3fa8; --purple-bg: #f3f0fb; --purple-border: #d9d0f5;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(15,14,13,.06), 0 4px 16px rgba(15,14,13,.06);
+}
+body { background: var(--paper); font-family: 'DM Sans', sans-serif; color: var(--ink); }
+
+/* ── Top bar ── */
+.top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; flex-wrap: wrap; gap: .75rem; }
+.heading-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.receipt-title { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; }
+.receipt-title span { color: var(--accent); }
+.receipt-code { font-family: 'SF Mono','Fira Code',monospace; font-size: .8rem; background: var(--paper); padding: .2rem .55rem; border-radius: 5px; border: 1px solid var(--border); }
+
+/* ── Status badge ── */
+.status-badge { display: inline-flex; align-items: center; gap: .3rem; padding: .3rem .85rem; border-radius: 999px; font-size: .76rem; font-weight: 600; }
+.status-badge::before { content:''; width:7px; height:7px; border-radius:50%; display:inline-block; }
+.s-paid    { background: var(--success-bg); color: var(--success); }
+.s-paid::before    { background: var(--success); }
+.s-pending { background: var(--warning-bg); color: var(--warning); }
+.s-pending::before { background: var(--warning); }
+.s-failed  { background: var(--danger-bg); color: var(--danger); }
+.s-failed::before  { background: var(--danger); }
+.s-refunded{ background: var(--info-bg); color: var(--info); }
+.s-refunded::before{ background: var(--info); }
+
+/* ── Action buttons ── */
+.btn-back { display: inline-flex; align-items: center; gap: .35rem; padding: .42rem 1rem; border-radius: 8px; font-size: .82rem; font-weight: 500; border: 1.5px solid var(--border); background: var(--card); color: var(--muted); text-decoration: none; transition: all .13s; }
+.btn-back:hover { border-color: var(--ink); color: var(--ink); }
+.btn-receipt { display: inline-flex; align-items: center; gap: .35rem; padding: .42rem 1rem; border-radius: 8px; font-size: .82rem; font-weight: 600; border: 1.5px solid var(--success); background: var(--success-bg); color: var(--success); text-decoration: none; transition: all .13s; }
+.btn-receipt:hover { background: var(--success); color: #fff; }
+
+/* ── Alerts ── */
+.alert-custom { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .86rem; display: flex; align-items: flex-start; gap: .5rem; }
+.alert-success { background: var(--success-bg); color: var(--success); border: 1px solid #b2d9c2; }
+.alert-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid #e0c97a; }
+.alert-error, .alert-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid #fca5a5; }
+.alert-info { background: var(--info-bg); color: var(--info); border: 1px solid #b2d0e8; }
+.alert-close { margin-left: auto; background: none; border: none; cursor: pointer; color: inherit; opacity: .55; font-size: 1rem; padding: 0; }
+
+/* ── Card grid ── */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+@media (max-width: 768px) { .detail-grid { grid-template-columns: 1fr; } }
+.col-full { grid-column: 1 / -1; }
+
+.info-card { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.card-header { padding: .72rem 1.2rem; background: var(--paper); border-bottom: 1.5px solid var(--border); font-family: 'Syne', sans-serif; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+/* ── Definition list ── */
+.info-dl { display: grid; grid-template-columns: 130px 1fr; }
+.info-dl dt, .info-dl dd { padding: .7rem 1.2rem; margin: 0; border-bottom: 1px solid var(--border); font-size: .87rem; }
+.info-dl dt { color: var(--muted); font-weight: 500; font-size: .82rem; }
+.info-dl dd { font-weight: 400; }
+.info-dl dt:last-of-type, .info-dl dd:last-of-type { border-bottom: none; }
+
+/* ── Financial summary accents ── */
+.amount-due-value { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; }
+.balance-positive { color: var(--danger); font-weight: 700; }
+.balance-clear { color: var(--success); font-weight: 700; }
+.discount-line { display: flex; align-items: center; gap: .5rem; }
+.discount-pill { display: inline-flex; align-items: center; gap: .3rem; background: var(--purple-bg); color: var(--purple); padding: .18rem .6rem; border-radius: 5px; font-size: .76rem; font-weight: 600; border: 1px solid var(--purple-border); }
+
+/* ── Services table ── */
+.services-table { width: 100%; border-collapse: collapse; }
+.services-table th { padding: .6rem 1.2rem; font-family: 'Syne', sans-serif; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); background: var(--paper); border-bottom: 1.5px solid var(--border); text-align: left; }
+.services-table td { padding: .72rem 1.2rem; border-bottom: 1px solid var(--border); font-size: .87rem; }
+.services-table tr:last-child td { border-bottom: none; }
+.services-table tfoot td { padding: .72rem 1.2rem; background: var(--paper); border-top: 1.5px solid var(--border); font-weight: 700; }
+
+/* ════════════════════════
+   CONFIRM PAYMENT SECTION
+   ════════════════════════ */
+.confirm-card { background: var(--card); border: 2px solid var(--accent); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.confirm-card .card-header { background: var(--accent); color: #fff; border-bottom-color: rgba(255,255,255,.15); }
+
+.confirm-body { padding: 1.25rem; }
+.confirm-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; }
+.confirm-field label { display: block; font-weight: 600; font-size: .82rem; margin-bottom: .38rem; }
+.confirm-field select, .confirm-field input, .confirm-field textarea {
+  width: 100%; padding: .5rem .85rem; border-radius: 8px;
+  border: 1.5px solid var(--border); background: var(--paper);
+  font-family: inherit; font-size: .87rem; color: var(--ink);
+  transition: border .15s, box-shadow .15s; box-sizing: border-box;
+}
+.confirm-field select:focus, .confirm-field input:focus, .confirm-field textarea:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,80,26,.1);
+}
+.confirm-field textarea { resize: vertical; min-height: 60px; }
+.field-error { margin-top: .28rem; font-size: .77rem; color: var(--accent); }
+
+.effective-due-callout {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .85rem 1rem; background: var(--accent-light);
+  border: 1.5px solid rgba(200,80,26,.2); border-radius: 8px; margin-bottom: 1.1rem;
+}
+.callout-label { font-size: .8rem; color: var(--accent); font-weight: 600; }
+.callout-value { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; color: var(--accent); }
+
+.btn-confirm { padding: .55rem 1.5rem; border-radius: 8px; background: var(--accent); color: #fff; border: none; font-family: 'Syne', sans-serif; font-weight: 700; font-size: .9rem; cursor: pointer; transition: opacity .15s; box-shadow: 0 2px 8px rgba(200,80,26,.25); }
+.btn-confirm:hover { opacity: .88; }
+
+/* ════════════════════════
+   DISCOUNT SECTION
+   ════════════════════════ */
+.discount-card { background: var(--card); border: 1.5px solid var(--purple-border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+.discount-card .card-header { background: var(--purple-bg); border-bottom-color: var(--purple-border); color: var(--purple); }
+
+.discount-body { padding: 1.25rem; }
+.discount-history { border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 1rem; }
+.discount-history-title { font-size: .76rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .65rem; }
+
+.dr-item { display: flex; align-items: flex-start; gap: .75rem; padding: .75rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: .6rem; background: var(--paper); }
+.dr-item:last-child { margin-bottom: 0; }
+.dr-amount { font-family: 'Syne', sans-serif; font-weight: 800; font-size: .95rem; white-space: nowrap; }
+.dr-meta { font-size: .78rem; color: var(--muted); margin-top: .15rem; }
+.dr-reason { font-size: .82rem; margin-top: .25rem; font-style: italic; color: var(--ink); }
+.dr-status { margin-left: auto; flex-shrink: 0; }
+.ds-pending  { background: var(--warning-bg); color: var(--warning); }
+.ds-approved { background: var(--success-bg); color: var(--success); }
+.ds-rejected { background: #f0efee; color: var(--muted); }
+
+.no-discount-msg { font-size: .84rem; color: var(--muted); text-align: center; padding: .5rem; }
+
+/* ── Discount request form ── */
+.discount-form-fields { display: grid; grid-template-columns: 160px 1fr; gap: .85rem; align-items: start; margin-bottom: .85rem; }
+@media (max-width: 600px) { .discount-form-fields { grid-template-columns: 1fr; } }
+.discount-form-fields label { display: block; font-weight: 600; font-size: .82rem; margin-bottom: .35rem; }
+.discount-form-fields input, .discount-form-fields textarea {
+  width: 100%; padding: .5rem .85rem; border-radius: 8px;
+  border: 1.5px solid var(--purple-border); background: var(--paper);
+  font-family: inherit; font-size: .87rem; color: var(--ink);
+  transition: border .15s; box-sizing: border-box;
+}
+.discount-form-fields textarea { resize: vertical; min-height: 65px; }
+.discount-form-fields input:focus, .discount-form-fields textarea:focus {
+  outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(109,63,168,.1);
+}
+.btn-request-discount { padding: .48rem 1.1rem; border-radius: 8px; background: var(--purple); color: #fff; border: none; font-family: 'Syne', sans-serif; font-weight: 700; font-size: .85rem; cursor: pointer; transition: opacity .15s; }
+.btn-request-discount:hover { opacity: .88; }
+.pending-notice { display: flex; align-items: center; gap: .6rem; padding: .7rem .85rem; background: var(--warning-bg); border: 1px solid #e0c97a; border-radius: 8px; font-size: .83rem; color: var(--warning); }
+.approved-notice { display: flex; align-items: center; gap: .6rem; padding: .7rem .85rem; background: var(--success-bg); border: 1px solid #b2d9c2; border-radius: 8px; font-size: .83rem; color: var(--success); }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+.info-card, .confirm-card, .discount-card { animation: fadeUp .22s ease both; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="h4 mb-0">
-    Payment <code>{{ payment.receipt_number }}</code>
-    <span class="badge ms-2
-      {% if payment.status == 'paid' %}bg-success
-      {% elif payment.status == 'pending' %}bg-warning text-dark
-      {% elif payment.status == 'failed' %}bg-danger
-      {% else %}bg-secondary{% endif %}">
+<div class="top-bar">
+  <div class="heading-row">
+    <h1 class="receipt-title">Payment <span>#{{ payment.receipt_number }}</span></h1>
+    <span class="status-badge
+      {% if payment.status == 'paid' %}s-paid
+      {% elif payment.status == 'pending' %}s-pending
+      {% elif payment.status == 'failed' %}s-failed
+      {% else %}s-refunded{% endif %}">
       {{ payment.get_status_display }}
     </span>
-  </h1>
-  <div class="d-flex gap-2">
-    <a href="{% url 'payments:list' %}" class="btn btn-sm btn-outline-secondary">← Back</a>
+  </div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+    <a href="{% url 'payments:list' %}" class="btn-back">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back
+    </a>
     {% if payment.status == 'paid' %}
-      <a href="{% url 'payments:receipt' payment.pk %}" class="btn btn-sm btn-outline-success">🧾 Receipt</a>
+      <a href="{% url 'payments:receipt' payment.pk %}" class="btn-receipt">🧾 Print Receipt</a>
     {% endif %}
   </div>
 </div>
 
 {% if messages %}
-  {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
+  {% for m in messages %}
+  <div class="alert-custom alert-{{ m.tags }}">
+    {{ m }}
+    <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
+  </div>
   {% endfor %}
 {% endif %}
 
-<div class="row g-4">
+<div class="detail-grid">
 
-  {# ── Payment info ── #}
-  <div class="col-md-6">
-    <div class="card h-100">
-      <div class="card-header fw-semibold">Patient & Visit</div>
-      <div class="card-body">
-        <dl class="row mb-0">
-          <dt class="col-5">Patient</dt>
-          <dd class="col-7">{{ payment.visit.patient.full_name }}</dd>
-          <dt class="col-5">Patient ID</dt>
-          <dd class="col-7"><code>{{ payment.visit.patient.patient_id }}</code></dd>
-          <dt class="col-5">Visit</dt>
-          <dd class="col-7">#{{ payment.visit.pk }}</dd>
-          <dt class="col-5">Processed by</dt>
-          <dd class="col-7">{{ payment.processed_by.get_full_name|default:payment.processed_by.username|default:"—" }}</dd>
-          <dt class="col-5">Created</dt>
-          <dd class="col-7">{{ payment.created_at|date:"d M Y H:i" }}</dd>
-          {% if payment.paid_at %}
-          <dt class="col-5">Paid at</dt>
-          <dd class="col-7">{{ payment.paid_at|date:"d M Y H:i" }}</dd>
-          {% endif %}
-        </dl>
-      </div>
-    </div>
+  {# ── Patient & Visit ── #}
+  <div class="info-card">
+    <div class="card-header">Patient &amp; Visit</div>
+    <dl class="info-dl">
+      <dt>Patient</dt>
+      <dd style="font-weight:600;">{{ payment.visit.patient.full_name }}</dd>
+      <dt>Patient ID</dt>
+      <dd><code>{{ payment.visit.patient.patient_id }}</code></dd>
+      <dt>Visit #</dt>
+      <dd>#{{ payment.visit.pk }}</dd>
+      <dt>Processed by</dt>
+      <dd>{{ payment.processed_by.get_full_name|default:payment.processed_by.username|default:"—" }}</dd>
+      <dt>Created</dt>
+      <dd style="color:var(--muted);font-size:.83rem;">{{ payment.created_at|date:"d M Y H:i" }}</dd>
+      {% if payment.paid_at %}
+      <dt>Paid at</dt>
+      <dd style="color:var(--muted);font-size:.83rem;">{{ payment.paid_at|date:"d M Y H:i" }}</dd>
+      {% endif %}
+    </dl>
   </div>
 
-  {# ── Financial summary ── #}
-  <div class="col-md-6">
-    <div class="card h-100">
-      <div class="card-header fw-semibold">Financial Summary</div>
-      <div class="card-body">
-        <dl class="row mb-0">
-          <dt class="col-5">Amount Due</dt>
-          <dd class="col-7 fw-bold">{{ payment.amount_due }}</dd>
-          <dt class="col-5">Amount Paid</dt>
-          <dd class="col-7">{{ payment.amount_paid }}</dd>
-          <dt class="col-5">Balance</dt>
-          <dd class="col-7 {% if payment.balance > 0 %}text-danger{% else %}text-success{% endif %}">
-            {{ payment.balance }}
-          </dd>
-          <dt class="col-5">Method</dt>
-          <dd class="col-7">{{ payment.get_payment_method_display|default:"—" }}</dd>
-          {% if payment.transaction_ref %}
-          <dt class="col-5">Ref</dt>
-          <dd class="col-7"><code>{{ payment.transaction_ref }}</code></dd>
-          {% endif %}
-        </dl>
-      </div>
-    </div>
+  {# ── Financial Summary ── #}
+  <div class="info-card">
+    <div class="card-header">Financial Summary</div>
+    <dl class="info-dl">
+      <dt>Gross amount</dt>
+      <dd><span class="amount-due-value">₦{{ payment.amount_due }}</span></dd>
+
+      {% if payment.discount_amount %}
+      <dt>Discount</dt>
+      <dd>
+        <div class="discount-line">
+          <span style="color:var(--purple);font-weight:700;">− ₦{{ payment.discount_amount }}</span>
+          <span class="discount-pill">
+            <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Approved by {{ payment.discount_approved_by.get_full_name|default:"admin" }}
+          </span>
+        </div>
+      </dd>
+      <dt>Net due</dt>
+      <dd><span class="amount-due-value" style="color:var(--accent);">₦{{ payment.effective_amount_due }}</span></dd>
+      {% endif %}
+
+      <dt>Amount paid</dt>
+      <dd>₦{{ payment.amount_paid }}</dd>
+      <dt>Balance</dt>
+      <dd class="{% if payment.balance > 0 %}balance-positive{% else %}balance-clear{% endif %}">
+        ₦{{ payment.balance }}
+        {% if payment.balance == 0 %} ✓{% endif %}
+      </dd>
+      <dt>Method</dt>
+      <dd>{{ payment.get_payment_method_display|default:"—" }}</dd>
+      {% if payment.transaction_ref %}
+      <dt>Ref</dt>
+      <dd><code>{{ payment.transaction_ref }}</code></dd>
+      {% endif %}
+    </dl>
   </div>
 
   {# ── Services ── #}
-  <div class="col-12">
-    <div class="card">
-      <div class="card-header fw-semibold">Services</div>
-      <div class="card-body p-0">
-        <table class="table table-sm mb-0">
-          <thead class="table-light">
-            <tr><th>Service</th><th class="text-end">Price</th></tr>
-          </thead>
-          <tbody>
-            {% for vs in services %}
-            <tr>
-              <td>{{ vs.service.name }}</td>
-              <td class="text-end">{{ vs.price_at_booking }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="2" class="text-muted text-center">No services.</td></tr>
-            {% endfor %}
-          </tbody>
-          <tfoot class="table-light">
-            <tr>
-              <th>Total</th>
-              <th class="text-end">{{ payment.amount_due }}</th>
-            </tr>
-          </tfoot>
-        </table>
+  <div class="info-card col-full">
+    <div class="card-header">Services Booked</div>
+    <table class="services-table">
+      <thead>
+        <tr><th>Service</th><th style="text-align:right">Price</th></tr>
+      </thead>
+      <tbody>
+        {% for vs in services %}
+        <tr>
+          <td>{{ vs.service.name }}</td>
+          <td style="text-align:right;font-variant-numeric:tabular-nums;">₦{{ vs.price_at_booking }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="2" style="padding:1.5rem;text-align:center;color:var(--muted);">No services.</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td style="font-weight:700;">Subtotal</td>
+          <td style="text-align:right;font-variant-numeric:tabular-nums;">₦{{ payment.amount_due }}</td>
+        </tr>
+        {% if payment.discount_amount %}
+        <tr>
+          <td style="color:var(--purple);font-weight:600;">Discount</td>
+          <td style="text-align:right;color:var(--purple);font-weight:600;">− ₦{{ payment.discount_amount }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight:800;font-family:'Syne',sans-serif;">Total Due</td>
+          <td style="text-align:right;font-weight:800;font-family:'Syne',sans-serif;color:var(--accent);">₦{{ payment.effective_amount_due }}</td>
+        </tr>
+        {% endif %}
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- {# ══════════════════════════════
+     DISCOUNT CARD
+     ══════════════════════════════ #} -->
+  <div class="discount-card col-full">
+    <div class="card-header">
+      <span>Discount</span>
+      {% if approved_discount %}
+        <span class="discount-pill">
+          <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Applied
+        </span>
+      {% endif %}
+    </div>
+    <div class="discount-body">
+
+      {# Approved — show applied notice #}
+      {% if approved_discount %}
+        <div class="approved-notice">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          A discount of <strong>&nbsp;₦{{ payment.discount_amount }}&nbsp;</strong> has been approved and applied by
+          {{ payment.discount_approved_by.get_full_name|default:"admin" }}.
+        </div>
+
+      {# Pending — show waiting notice #}
+      {% elif pending_discount %}
+        <div class="pending-notice">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          A discount of <strong>&nbsp;₦{{ pending_discount.discount_amount }}&nbsp;</strong>
+          is awaiting admin approval.
+          {% if is_admin %}
+            &nbsp;—&nbsp;
+            <a href="{% url 'payments:discounts' %}" style="color:var(--warning);font-weight:700;">Review now →</a>
+          {% endif %}
+        </div>
+
+        {# Admin inline approve/reject on detail page #}
+        {% if is_admin %}
+        <div style="margin-top:1rem;padding:1rem;background:var(--paper);border:1px solid var(--border);border-radius:8px;">
+          <div style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.75rem;">Quick Review</div>
+          <div style="font-size:.85rem;margin-bottom:.6rem;"><strong>Amount:</strong> ₦{{ pending_discount.discount_amount }} &nbsp;|&nbsp; <strong>Requested by:</strong> {{ pending_discount.requested_by.get_full_name }}</div>
+          <div style="font-size:.85rem;margin-bottom:.85rem;font-style:italic;color:var(--muted);">"{{ pending_discount.reason }}"</div>
+          <form method="post" action="{% url 'payments:discount-review' pending_discount.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="approve">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" style="padding:.42rem 1rem;border-radius:7px;background:var(--success);color:#fff;border:none;font-weight:700;font-size:.83rem;cursor:pointer;margin-right:.5rem;">✓ Approve</button>
+          </form>
+          <form method="post" action="{% url 'payments:discount-review' pending_discount.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="reject">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit" style="padding:.42rem 1rem;border-radius:7px;background:#f0efee;color:var(--muted);border:1px solid var(--border);font-weight:700;font-size:.83rem;cursor:pointer;">✕ Reject</button>
+          </form>
+        </div>
+        {% endif %}
+
+      {# No discount yet — show request form for finance/admin #}
+      {% elif discount_form and payment.status != 'paid' %}
+        <p style="font-size:.84rem;color:var(--muted);margin:0 0 1rem;">
+          Request a discount for this invoice. An admin must approve it before it is applied.
+        </p>
+        <form method="post" action="{% url 'payments:request-discount' payment.pk %}">
+          {% csrf_token %}
+          <div class="discount-form-fields">
+            <div>
+              <label>{{ discount_form.discount_amount.label }}</label>
+              {{ discount_form.discount_amount }}
+              {% if discount_form.discount_amount.errors %}
+                <div class="field-error">{{ discount_form.discount_amount.errors }}</div>
+              {% endif %}
+            </div>
+            <div>
+              <label>{{ discount_form.reason.label }}</label>
+              {{ discount_form.reason }}
+              {% if discount_form.reason.errors %}
+                <div class="field-error">{{ discount_form.reason.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <button type="submit" class="btn-request-discount">
+            Request Discount →
+          </button>
+        </form>
+
+      {% elif payment.status == 'paid' %}
+        <p class="no-discount-msg">No discounts can be applied to a paid invoice.</p>
+      {% endif %}
+
+      {# Discount history #}
+      {% if discount_requests %}
+      <div class="discount-history">
+        <div class="discount-history-title">Request history</div>
+        {% for dr in discount_requests %}
+        <div class="dr-item">
+          <div style="flex:1;">
+            <div class="dr-amount">₦{{ dr.discount_amount }}</div>
+            <div class="dr-meta">
+              By {{ dr.requested_by.get_full_name }} · {{ dr.created_at|date:"d M Y H:i" }}
+              {% if dr.reviewed_by %}
+                · Reviewed by {{ dr.reviewed_by.get_full_name }} {{ dr.reviewed_at|date:"d M Y" }}
+              {% endif %}
+            </div>
+            <div class="dr-reason">"{{ dr.reason }}"</div>
+            {% if dr.reviewer_note %}
+              <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem;">Note: {{ dr.reviewer_note }}</div>
+            {% endif %}
+          </div>
+          <div class="dr-status">
+            <span class="status-badge
+              {% if dr.status == 'pending' %}s-pending
+              {% elif dr.status == 'approved' %}s-paid
+              {% else %}s-refunded{% endif %}">
+              {{ dr.get_status_display }}
+            </span>
+          </div>
+        </div>
+        {% endfor %}
       </div>
+      {% endif %}
     </div>
   </div>
 
-  {# ── Notes ── #}
-  {% if payment.notes %}
-  <div class="col-12">
-    <div class="card">
-      <div class="card-header fw-semibold">Notes</div>
-      <div class="card-body">{{ payment.notes }}</div>
+  <!-- {# ══════════════════════════════
+     CONFIRM PAYMENT FORM
+     ══════════════════════════════ #} -->
+  {% if payment.status != 'paid' and is_finance_or_admin %}
+  <div class="confirm-card col-full">
+    <div class="card-header">Confirm Payment</div>
+    <div class="confirm-body">
+
+      {# Show effective amount prominently #}
+      <div class="effective-due-callout">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>
+        <div>
+          <div class="callout-label">Amount to collect from patient</div>
+          <div class="callout-value">₦{{ payment.effective_amount_due }}</div>
+        </div>
+        {% if payment.discount_amount %}
+          <div style="font-size:.78rem;color:var(--accent);margin-left:auto;">
+            Includes ₦{{ payment.discount_amount }} discount
+          </div>
+        {% endif %}
+      </div>
+
+      <form method="post" action="{% url 'payments:confirm' payment.pk %}">
+        {% csrf_token %}
+        <div class="confirm-row">
+          <div class="confirm-field">
+            <label>Amount Paid (₦)</label>
+            {{ confirm_form.amount_paid }}
+            {% if confirm_form.amount_paid.errors %}
+              <div class="field-error">{{ confirm_form.amount_paid.errors }}</div>
+            {% endif %}
+          </div>
+          <div class="confirm-field">
+            <label>Payment Method</label>
+            {{ confirm_form.payment_method }}
+          </div>
+          <div class="confirm-field">
+            <label>Transaction Ref <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+            {{ confirm_form.transaction_ref }}
+          </div>
+          <div class="confirm-field" style="display:flex;align-items:flex-end;">
+            <button type="submit" class="btn-confirm" style="width:100%;">Confirm Payment</button>
+          </div>
+        </div>
+        <div style="margin-top:.85rem;">
+          <label style="display:block;font-weight:600;font-size:.82rem;margin-bottom:.35rem;">Notes <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
+          {{ confirm_form.notes }}
+        </div>
+      </form>
     </div>
   </div>
   {% endif %}
 
-  {# ── Confirm payment form (Finance only, pending payments) ── #}
-  {% if payment.status != 'paid' and request.user.role == 'finance' or request.user.is_superuser %}
-  <div class="col-12">
-    <div class="card border-primary">
-      <div class="card-header bg-primary text-white fw-semibold">Confirm Payment</div>
-      <div class="card-body">
-        <form method="post" action="{% url 'payments:confirm' payment.pk %}">
-          {% csrf_token %}
-          <div class="row g-3">
-            <div class="col-md-3">
-              <label class="form-label">Amount Paid</label>
-              {{ confirm_form.amount_paid }}
-              {% if confirm_form.amount_paid.errors %}
-                <div class="text-danger small">{{ confirm_form.amount_paid.errors }}</div>
-              {% endif %}
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Payment Method</label>
-              {{ confirm_form.payment_method }}
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Transaction Ref</label>
-              {{ confirm_form.transaction_ref }}
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-              <button type="submit" class="btn btn-primary w-100">Confirm</button>
-            </div>
-            <div class="col-12">
-              <label class="form-label">Notes</label>
-              {{ confirm_form.notes }}
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
+  {# ── Notes ── #}
+  {% if payment.notes %}
+  <div class="info-card col-full">
+    <div class="card-header">Notes</div>
+    <div style="padding:1rem 1.2rem;font-size:.88rem;line-height:1.6;">{{ payment.notes }}</div>
   </div>
   {% endif %}
 

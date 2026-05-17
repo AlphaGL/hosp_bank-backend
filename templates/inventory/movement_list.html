@@ -1,0 +1,119 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}Stock Movements — Inventory{% endblock %}
+{% block page_title %}Stock Ledger{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Stock Ledger</h1>
+        <div class="breadcrumb"><a href="{% url 'inventory:dashboard' %}">Inventory</a> › Movements</div>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <a href="{% url 'inventory:dispense' %}" class="btn btn-primary btn-sm">Dispense</a>
+        <a href="{% url 'inventory:adjust' %}" class="btn btn-ghost btn-sm">Adjust</a>
+    </div>
+</div>
+
+<form method="get" class="filter-bar">
+    <div class="filter-group">
+        <label>Item</label>
+        {{ filter_form.item }}
+    </div>
+    <div class="filter-group">
+        <label>Type</label>
+        {{ filter_form.movement_type }}
+    </div>
+    <div class="filter-group">
+        <label>From</label>
+        {{ filter_form.date_from }}
+    </div>
+    <div class="filter-group">
+        <label>To</label>
+        {{ filter_form.date_to }}
+    </div>
+    <div class="filter-group">
+        <label>Department</label>
+        {{ filter_form.department }}
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm btn-filter">Filter</button>
+    <a href="{% url 'inventory:movement-list' %}" class="btn btn-ghost btn-sm btn-filter">Clear</a>
+</form>
+
+<div class="data-table-wrap">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Item</th>
+                <th>Type</th>
+                <th>Δ Qty</th>
+                <th>Reference</th>
+                <th>Department</th>
+                <th>By</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in movements %}
+            <tr>
+                <td class="muted" style="white-space:nowrap;">{{ m.created_at|date:"d M Y" }}<br><span style="font-size:11px;">{{ m.created_at|time:"H:i" }}</span></td>
+                <td>
+                    <a href="{% url 'inventory:item-detail' m.item.pk %}" style="color:var(--text-primary);font-weight:600;text-decoration:none;">
+                        {{ m.item.name|truncatechars:28 }}
+                    </a>
+                    <div class="mono" style="font-size:11px;color:var(--text-muted);">[{{ m.item.sku }}]</div>
+                </td>
+                <td>
+                    {% if m.quantity_delta > 0 %}
+                        <span class="badge badge-success">{{ m.get_movement_type_display }}</span>
+                    {% elif m.movement_type == 'writeoff' %}
+                        <span class="badge badge-danger">{{ m.get_movement_type_display }}</span>
+                    {% else %}
+                        <span class="badge badge-warn">{{ m.get_movement_type_display }}</span>
+                    {% endif %}
+                </td>
+                <td class="mono" style="font-weight:700;color:{% if m.quantity_delta > 0 %}var(--success){% else %}var(--danger){% endif %}">
+                    {% if m.quantity_delta > 0 %}+{% endif %}{{ m.quantity_delta }} {{ m.item.unit }}
+                </td>
+                <td class="muted">{{ m.reference|default:"—" }}</td>
+                <td class="muted">{{ m.department|default:"—" }}</td>
+                <td class="muted">{{ m.performed_by.get_full_name|default:"—" }}</td>
+                <td>
+                    <a href="{% url 'inventory:movement-detail' m.pk %}" class="btn-icon" title="View detail">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4zm2 2H5V5h14v14zm0-16H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+                        <p>No movements match the filters.</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="page-link active">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
