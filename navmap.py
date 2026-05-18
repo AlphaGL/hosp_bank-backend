@@ -145,14 +145,14 @@ NAV_SECTIONS = [
         'items': [
             {
                 'label': 'Services',
-                'url_name': 'services:list',
+                'url_name': 'services:catalogue-list',
                 'icon': 'services',
                 'check': _clinical,
                 'nav_block': 'nav_services',
             },
             {
                 'label': 'Queue',
-                'url_name': 'queues:list',
+                'url_name': 'queue:list',
                 'icon': 'queue',
                 'check': _clinical,
                 'nav_block': 'nav_queue',
@@ -179,8 +179,9 @@ NAV_SECTIONS = [
             },
         ],
     },
+    # ── Inventory overview & catalogue ────────────────────────────────────
     {
-        'label': 'Inventory / IMS',
+        'label': 'Inventory',
         'check': _inventory,
         'items': [
             {
@@ -198,20 +199,6 @@ NAV_SECTIONS = [
                 'nav_block': 'nav_items',
             },
             {
-                'label': 'Stock Movements',
-                'url_name': 'inventory:movement-list',
-                'icon': 'movements',
-                'check': _inventory,
-                'nav_block': 'nav_movements',
-            },
-            {
-                'label': 'Purchase Orders',
-                'url_name': 'inventory:po-list',
-                'icon': 'purchase',
-                'check': _inventory,
-                'nav_block': 'nav_po',
-            },
-            {
                 'label': 'Suppliers',
                 'url_name': 'inventory:supplier-list',
                 'icon': 'suppliers',
@@ -224,6 +211,69 @@ NAV_SECTIONS = [
                 'icon': 'alert',
                 'check': _inventory,
                 'nav_block': 'nav_alerts',
+            },
+        ],
+    },
+    # ── Stock usage (clinical staff — doctors / nurses) ────────────────────
+    {
+        'label': 'Stock Usage',
+        'check': _clinical,
+        'items': [
+            {
+                'label': 'Record Usage',
+                'url_name': 'inventory:record-usage',
+                'icon': 'visits',
+                'check': _clinical,
+                'nav_block': 'nav_record_usage',
+            },
+            {
+                'label': 'Usage History',
+                'url_name': 'inventory:usage-history',
+                'icon': 'movements',
+                'check': _clinical,
+                'nav_block': 'nav_usage_history',
+            },
+        ],
+    },
+    # ── Storekeeper operations ─────────────────────────────────────────────
+    {
+        'label': 'Storekeeper',
+        'check': _inventory,
+        'items': [
+            {
+                'label': 'Dispense Stock',
+                'url_name': 'inventory:dispense',
+                'icon': 'billing',
+                'check': _inventory,
+                'nav_block': 'nav_dispense',
+            },
+            {
+                'label': 'Stock Adjustment',
+                'url_name': 'inventory:adjust',
+                'icon': 'workload',
+                'check': _inventory,
+                'nav_block': 'nav_adjust',
+            },
+            {
+                'label': 'Stock Batches',
+                'url_name': 'inventory:batch-list',
+                'icon': 'queue',
+                'check': _inventory,
+                'nav_block': 'nav_batches',
+            },
+            {
+                'label': 'Stock Movements',
+                'url_name': 'inventory:movement-list',
+                'icon': 'movements',
+                'check': _inventory,
+                'nav_block': 'nav_movements',
+            },
+            {
+                'label': 'Purchase Orders',
+                'url_name': 'inventory:po-list',
+                'icon': 'purchase',
+                'check': _inventory,
+                'nav_block': 'nav_po',
             },
         ],
     },
@@ -302,8 +352,8 @@ SITEMAP_SECTIONS = [
         'check': _clinical,
         'description': 'Manage diagnostic services, queues & results',
         'links': [
-            {'label': 'Services List',     'url_name': 'services:list',          'check': _clinical},
-            {'label': 'Department Queue',  'url_name': 'queues:list',            'check': _clinical},
+            {'label': 'Services List',     'url_name': 'services:catalogue-list', 'check': _clinical},
+            {'label': 'Department Queue',  'url_name': 'queue:list',             'check': _clinical},
             {'label': 'Workload View',     'url_name': 'department-workload',    'check': _clinical},
         ],
     },
@@ -327,11 +377,24 @@ SITEMAP_SECTIONS = [
         'links': [
             {'label': 'IMS Dashboard',     'url_name': 'inventory:dashboard',    'check': _inventory},
             {'label': 'Consumable Items',  'url_name': 'inventory:item-list',    'check': _inventory},
+            {'label': 'Stock Batches',     'url_name': 'inventory:batch-list',   'check': _inventory},
             {'label': 'Stock Movements',   'url_name': 'inventory:movement-list','check': _inventory},
             {'label': 'Purchase Orders',   'url_name': 'inventory:po-list',      'check': _inventory},
             {'label': 'Suppliers',         'url_name': 'inventory:supplier-list','check': _inventory},
             {'label': 'Low Stock Alerts',  'url_name': 'inventory:alerts',       'check': _inventory},
             {'label': 'Dispense Stock',    'url_name': 'inventory:dispense',     'check': _inventory},
+            {'label': 'Stock Adjustment',  'url_name': 'inventory:adjust',       'check': _inventory},
+        ],
+    },
+    {
+        'title': 'Stock Usage',
+        'color': '--teal',
+        'icon': 'visits',
+        'check': _clinical,
+        'description': 'Record and review stock used during procedures',
+        'links': [
+            {'label': 'Record Usage',      'url_name': 'inventory:record-usage',  'check': _clinical},
+            {'label': 'Usage History',     'url_name': 'inventory:usage-history', 'check': _clinical},
         ],
     },
     {

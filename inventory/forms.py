@@ -347,3 +347,95 @@ class PurchaseOrderFilterForm(forms.Form):
         required=False,
         widget=forms.DateInput(attrs={**_fc('form-control-sm'), 'type': 'date'}),
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Bulk Usage Recording  (doctor/nurse records all items used in one submission)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class BulkUsageHeaderForm(forms.Form):
+    """
+    Header / context for a bulk usage record.
+    One of these is submitted alongside UsageLineFormSet.
+    """
+    CONTEXT_CHOICES = [
+        ('procedure',    'Surgical Procedure'),
+        ('consultation', 'Consultation / OPD'),
+        ('ward',         'Ward / Inpatient Care'),
+        ('emergency',    'Emergency / A&E'),
+        ('lab',          'Laboratory'),
+        ('imaging',      'Radiology / Imaging'),
+        ('other',        'Other'),
+    ]
+
+    context_type = forms.ChoiceField(
+        choices=CONTEXT_CHOICES,
+        label='Usage Context',
+        widget=forms.Select(attrs=_fs()),
+    )
+    department = forms.CharField(
+        required=False,
+        max_length=100,
+        label='Department / Ward',
+        widget=forms.TextInput(attrs={
+            **_fc(),
+            'placeholder': 'e.g. Theatre 1, Male Ward, A&E…',
+        }),
+    )
+    reference = forms.CharField(
+        required=False,
+        max_length=100,
+        label='Reference',
+        widget=forms.TextInput(attrs={
+            **_fc(),
+            'placeholder': 'Visit ID, patient name, procedure code…',
+        }),
+    )
+    notes = forms.CharField(
+        required=False,
+        label='Notes',
+        widget=forms.Textarea(attrs={
+            **_fc(),
+            'rows': 2,
+            'placeholder': 'Any additional notes about this usage…',
+        }),
+    )
+
+
+class UsageLineForm(forms.Form):
+    """
+    A single line in the bulk usage form — one item + quantity.
+
+    The item queryset intentionally includes ALL active items, even those
+    with zero stock. Out-of-stock items are shown greyed-out and disabled
+    in the template so clinical staff can:
+      1. See the item exists (not wonder if it was deleted)
+      2. Know it's unavailable and flag it to the storekeeper
+      3. Plan alternatives (e.g. size M gloves when size L is out)
+
+    Server-side validation in BulkUsageView rejects any attempt to actually
+    submit a quantity for an out-of-stock item, so the disable is UX-only
+    (the backend is the real guard).
+    """
+    item = forms.ModelChoiceField(
+        queryset=ConsumableItem.objects.filter(is_active=True).order_by('category', 'name'),
+        empty_label='— Select item —',
+        widget=forms.Select(attrs=_fs()),
+    )
+    quantity = forms.IntegerField(
+        min_value=1,
+        widget=forms.NumberInput(attrs={
+            **_fc(),
+            'placeholder': '0',
+            'style': 'text-align:center; width:90px;',
+        }),
+    )
+
+
+UsageLineFormSet = forms.formset_factory(
+    UsageLineForm,
+    extra=3,
+    min_num=1,
+    validate_min=True,
+    can_delete=True,
+)

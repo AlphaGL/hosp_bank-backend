@@ -275,9 +275,9 @@
 
         <div class="hub-role-badge">
             <span class="role-dot"></span>
-            <strong>{{ role_label }}</strong>
+            <strong>{{ role_label|default:user.get_role_display }}</strong>
             <span style="opacity:.7;">·</span>
-            <span style="font-weight:400; opacity:.85;">{{ role_sub }}</span>
+            <span style="font-weight:400; opacity:.85;">{{ role_sub|default:user.get_full_name }}</span>
         </div>
 
         <div class="hub-stats">

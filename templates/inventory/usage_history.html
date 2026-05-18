@@ -1,0 +1,182 @@
+{% extends "inventory/base_inventory.html" %}
+
+{% block title %}Usage History — Inventory{% endblock %}
+{% block page_title %}Usage History{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>Usage History</h1>
+        <div class="breadcrumb">
+            <a href="{% url 'inventory:dashboard' %}">Inventory</a> › Usage History
+            | Today: {{ today }}
+        </div>
+    </div>
+    <a href="{% url 'inventory:record-usage' %}" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        Record Usage
+    </a>
+</div>
+
+{# ── Filter bar ─────────────────────────────────────────────────────────── #}
+<form method="get" class="filter-bar">
+    <div class="filter-group">
+        <label>Item</label>
+        <select name="item" class="form-select form-select-sm">
+            <option value="">All Items</option>
+            {% for item in items %}
+            <option value="{{ item.pk }}" {% if filters.item == item.pk|stringformat:'s' %}selected{% endif %}>
+                {{ item.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="filter-group">
+        <label>Department</label>
+        <input type="text" name="department" value="{{ filters.department }}"
+               placeholder="Filter by dept…" class="form-control form-control-sm">
+    </div>
+    <div class="filter-group">
+        <label>Reference</label>
+        <input type="text" name="reference" value="{{ filters.reference }}"
+               placeholder="Visit ID, code…" class="form-control form-control-sm">
+    </div>
+    <div class="filter-group">
+        <label>Recorded By</label>
+        <input type="text" name="performed_by" value="{{ filters.performed_by }}"
+               placeholder="Staff name…" class="form-control form-control-sm">
+    </div>
+    <div class="filter-group">
+        <label>From</label>
+        <input type="date" name="date_from" value="{{ filters.date_from }}" class="form-control form-control-sm">
+    </div>
+    <div class="filter-group">
+        <label>To</label>
+        <input type="date" name="date_to" value="{{ filters.date_to }}" class="form-control form-control-sm">
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm btn-filter">Filter</button>
+    <a href="{% url 'inventory:usage-history' %}" class="btn btn-ghost btn-sm btn-filter">Clear</a>
+</form>
+
+{# ── Summary strip ─────────────────────────────────────────────────────── #}
+<div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+    <div class="stat-card blue" style="flex:1;min-width:150px;padding:14px 18px;">
+        <div class="stat-label">Total Entries</div>
+        <div class="stat-value" style="font-size:22px;">{{ page_obj.paginator.count }}</div>
+        <div class="stat-sub">dispense records</div>
+    </div>
+    {% if movements %}
+    <div class="stat-card teal" style="flex:1;min-width:150px;padding:14px 18px;">
+        <div class="stat-label">Latest Entry</div>
+        <div class="stat-value" style="font-size:16px;margin-top:4px;">{{ movements.0.created_at|date:"d M Y" }}</div>
+        <div class="stat-sub">{{ movements.0.created_at|time:"H:i" }} by {{ movements.0.performed_by.get_full_name|default:"unknown" }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="data-table-wrap">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date &amp; Time</th>
+                <th>Item</th>
+                <th>Qty Used</th>
+                <th>Context / Notes</th>
+                <th>Department</th>
+                <th>Reference</th>
+                <th>Recorded By</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in movements %}
+            <tr>
+                <td style="white-space:nowrap;">
+                    <div style="font-weight:600;font-size:13px;">{{ m.created_at|date:"d M Y" }}</div>
+                    <div class="muted" style="font-size:11px;">{{ m.created_at|time:"H:i" }}</div>
+                </td>
+                <td>
+                    <a href="{% url 'inventory:item-detail' m.item.pk %}"
+                       style="color:var(--text-primary);font-weight:600;text-decoration:none;font-size:13.5px;">
+                        {{ m.item.name }}
+                    </a>
+                    <div class="mono" style="font-size:11px;color:var(--text-muted);">[{{ m.item.sku }}]</div>
+                </td>
+                <td>
+                    <span style="font-size:18px;font-weight:800;color:var(--danger);">
+                        {{ m.quantity_delta|stringformat:'d'|slice:'1:' }}
+                    </span>
+                    <span class="muted" style="font-size:12px;"> {{ m.item.unit }}</span>
+                </td>
+                <td class="muted" style="max-width:220px;">
+                    {% if m.notes %}
+                    <div style="font-size:12.5px;line-height:1.5;">{{ m.notes|truncatechars:80 }}</div>
+                    {% else %}
+                    —
+                    {% endif %}
+                </td>
+                <td class="muted">{{ m.department|default:"—" }}</td>
+                <td>
+                    {% if m.reference %}
+                    <span class="mono" style="font-size:12px;background:var(--surface-2);padding:3px 8px;border-radius:4px;">
+                        {{ m.reference }}
+                    </span>
+                    {% else %}
+                    <span class="muted">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div style="font-weight:500;font-size:13px;">{{ m.performed_by.get_full_name|default:"—" }}</div>
+                    {% if m.performed_by %}
+                    <div class="muted" style="font-size:11px;">{{ m.performed_by.get_role_display|default:"" }}</div>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'inventory:movement-detail' m.pk %}" class="btn-icon" title="View detail">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4zm2 2H5V5h14v14zm0-16H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+                        </svg>
+                        <p>No usage records found{% if filters.item or filters.department or filters.reference or filters.date_from %} for this filter{% endif %}.</p>
+                        <a href="{% url 'inventory:record-usage' %}" class="btn btn-primary btn-sm">Record Usage Now</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a class="page-link" href="?page=1{% for k,v in filters.items %}&{{ k }}={{ v }}{% endfor %}">«</a>
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for k,v in filters.items %}&{{ k }}={{ v }}{% endfor %}">‹</a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="page-link active">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a class="page-link" href="?page={{ num }}{% for k,v in filters.items %}&{{ k }}={{ v }}{% endfor %}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for k,v in filters.items %}&{{ k }}={{ v }}{% endfor %}">›</a>
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for k,v in filters.items %}&{{ k }}={{ v }}{% endfor %}">»</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<div style="margin-top:20px;padding:12px 16px;background:var(--surface);border-radius:var(--radius);font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:8px;">
+    <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;flex-shrink:0;opacity:0.6"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+    These records are immutable — usage entries cannot be edited or deleted after submission.
+    For corrections, use <a href="{% url 'inventory:adjust' %}" style="color:var(--blue);">Stock Adjustment</a>.
+</div>
+{% endblock %}
